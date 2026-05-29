@@ -1,1544 +1,1296 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ruta Segura PESV - Multi-Jugador y Simulación en Tiempo Real</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome para íconos -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;700&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ruta Segura PESV - El Desafío de PAR Servicios</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons para elementos viales y botones -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Estilos Personalizados y Animaciones -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
     
-    <style>
-        body {
-            font-family: 'Montserrat', sans-serif;
-        }
-        .header-font {
-            font-family: 'Comfortaa', sans-serif;
-        }
-        @keyframes pulse-slow {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.08); opacity: 0.8; }
-        }
-        .pulse-element {
-            animation: pulse-slow 2s infinite ease-in-out;
-        }
-        .road-anim {
-            background: linear-gradient(0deg, #1e293b 0%, #0f172a 100%);
-            position: relative;
-            overflow: hidden;
-        }
-        .road-line {
-            width: 6px;
-            height: 50px;
-            background-color: #fef08a;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            animation: move-road 1.2s infinite linear;
-        }
-        @keyframes move-road {
-            0% { top: -60px; }
-            100% { top: 100%; }
-        }
-    </style>
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+      color: #f8fafc;
+    }
+
+    .glass {
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .neon-border-blue {
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    }
+
+    .neon-border-green {
+      box-shadow: 0 0 15px rgba(34, 197, 94, 0.5);
+    }
+
+    .neon-border-amber {
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+    }
+
+    .road-lines {
+      background-image: linear-gradient(90deg, transparent 50%, #fef08a 50%);
+      background-size: 60px 100%;
+    }
+
+    /* Animación de Parpadeo Vial */
+    @keyframes pulse-yellow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.05); }
+    }
+    .pulsing-alert {
+      animation: pulse-yellow 2s infinite ease-in-out;
+    }
+  </style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen flex flex-col justify-between">
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden">
 
-    <!-- HEADER GLOBAL -->
-    <header class="bg-slate-950 border-b border-blue-900/50 py-4 px-6 shadow-xl">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-3">
-                <div class="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-500/20 text-white">
-                    <i class="fa-solid fa-shield-halved text-2xl"></i>
-                </div>
-                <div>
-                    <h1 class="header-font text-xl font-bold tracking-wide text-blue-400">PAR Servicios</h1>
-                    <p class="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">Plan Estratégico de Seguridad Vial (PESV)</p>
-                </div>
-            </div>
-            
-            <!-- Tablero de Estado del Juego con Cronómetro -->
-            <div id="game-stats" class="hidden flex flex-wrap items-center gap-4 md:gap-6 bg-slate-900/80 px-4 py-2 rounded-2xl border border-slate-800">
-                <div class="text-center">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase">Sala</p>
-                    <p id="stat-room" class="text-sm font-black text-blue-400">---</p>
-                </div>
-                <div class="w-[1px] h-8 bg-slate-800"></div>
-                <div class="text-center">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase">Puntaje</p>
-                    <p id="stat-score" class="text-lg font-black text-amber-400">0</p>
-                </div>
-                <div class="w-[1px] h-8 bg-slate-800"></div>
-                <div class="text-center">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase">CRONÓMETRO</p>
-                    <p id="stat-timer" class="text-lg font-mono font-black text-emerald-400">00:00.00</p>
-                </div>
-                <div class="w-[1px] h-8 bg-slate-800"></div>
-                <div class="text-center">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase">Vidas</p>
-                    <div class="flex gap-1 text-rose-500 mt-1" id="stat-lives">
-                        <i class="fa-solid fa-heart"></i>
-                        <i class="fa-solid fa-heart"></i>
-                        <i class="fa-solid fa-heart"></i>
-                    </div>
-                </div>
-                <div class="w-[1px] h-8 bg-slate-800"></div>
-                <div class="text-center">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase">Fase</p>
-                    <p id="stat-phase" class="text-xs font-bold text-blue-400">1 / 3</p>
-                </div>
-            </div>
+  <!-- CAPA DE SONIDOS SINTETIZADOS (Web Audio API) -->
+  <script>
+    // Sintetizador de audio web nativo para efectos de sonido sin dependencias externas
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      
+      const now = audioCtx.currentTime;
+      
+      if (type === 'click') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.start(now);
+        osc.stop(now + 0.1);
+      } else if (type === 'correct') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, now); // C5
+        osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+        osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        osc.start(now);
+        osc.stop(now + 0.4);
+      } else if (type === 'error') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.linearRampToValueAtTime(90, now + 0.3);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      } else if (type === 'victory') {
+        // Fanfarria triunfal
+        osc.type = 'triangle';
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          const oscSeq = audioCtx.createOscillator();
+          const gainSeq = audioCtx.createGain();
+          oscSeq.connect(gainSeq);
+          gainSeq.connect(audioCtx.destination);
+          oscSeq.type = 'triangle';
+          oscSeq.frequency.setValueAtTime(freq, now + idx * 0.12);
+          gainSeq.gain.setValueAtTime(0.1, now + idx * 0.12);
+          gainSeq.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.12 + 0.3);
+          oscSeq.start(now + idx * 0.12);
+          oscSeq.stop(now + idx * 0.12 + 0.3);
+        });
+      }
+    }
+  </script>
+
+  <!-- CABECERA PRINCIPAL -->
+  <header class="w-full py-4 px-6 glass border-b border-slate-800 flex flex-wrap justify-between items-center gap-4 z-10">
+    <div class="flex items-center gap-3">
+      <div class="bg-blue-600 text-white p-2.5 rounded-xl shadow-lg shadow-blue-500/20">
+        <i class="fa-solid fa-traffic-light text-2xl"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
+          Ruta Segura PESV <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-normal">Capacitación PAR</span>
+        </h1>
+        <p class="text-xs text-slate-400">Resolución 40595 de 2022 - Nivel Básico</p>
+      </div>
+    </div>
+    
+    <!-- Cronómetro Global Visible -->
+    <div id="game-stats-header" class="hidden flex items-center gap-6">
+      <div class="text-center glass px-4 py-1.5 rounded-xl border border-slate-700/60">
+        <div class="text-[10px] uppercase tracking-wider text-slate-400">Tiempo de Carrera</div>
+        <div id="time-display" class="font-mono text-lg font-bold text-amber-400">00:00.00</div>
+      </div>
+      <div class="text-center glass px-4 py-1.5 rounded-xl border border-slate-700/60">
+        <div class="text-[10px] uppercase tracking-wider text-slate-400">Penalizaciones</div>
+        <div id="penalties-display" class="font-mono text-lg font-bold text-red-500">+0s</div>
+      </div>
+      <div class="text-center glass px-4 py-1.5 rounded-xl border border-slate-700/60">
+        <div class="text-[10px] uppercase tracking-wider text-slate-400">Vidas de Ruta</div>
+        <div id="lives-display" class="flex gap-1 justify-center mt-1">
+          <i class="fa-solid fa-heart text-red-500"></i>
+          <i class="fa-solid fa-heart text-red-500"></i>
+          <i class="fa-solid fa-heart text-red-500"></i>
         </div>
-    </header>
+      </div>
+    </div>
+  </header>
 
-    <!-- ÁREA DE CONTENIDO PRINCIPAL -->
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+  <!-- CONTENEDOR PRINCIPAL -->
+  <main class="flex-grow flex items-center justify-center p-4 md:p-8 w-full max-w-7xl mx-auto">
+    <div class="w-full grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch">
+      
+      <!-- CONTENIDO O PANTALLA ACTIVA (3/4 de ancho en pantallas grandes) -->
+      <div id="main-content-card" class="lg:col-span-3 glass rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-2xl relative overflow-hidden border border-slate-800/80 min-h-[580px]">
         
-        <!-- COLUMNA PRINCIPAL DE JUEGO (Izquierda / Centro) -->
-        <div class="lg:col-span-8 w-full">
+        <!-- PANTALLA 1: REGISTRO E INGRESO A LA SALA -->
+        <div id="screen-register" class="flex flex-col justify-center items-center h-full py-6">
+          <div class="w-20 h-20 bg-amber-500 text-slate-950 rounded-3xl flex items-center justify-center text-4xl mb-6 shadow-xl shadow-amber-500/20 pulsing-alert">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <h2 class="text-3xl font-extrabold text-center mb-2 tracking-tight text-white">Ingreso a la Competencia Grupal</h2>
+          <p class="text-slate-400 text-center mb-8 max-w-md text-sm">
+            Escribe tu nombre y el código de tu sala de capacitación. Competirás contra tus compañeros en tiempo real para ver quién tiene el mejor tiempo y conocimiento.
+          </p>
 
-            <!-- PANTALLA 1: MENÚ DE INICIO / LOBBY MULTIJUGADOR -->
-            <div id="screen-intro" class="w-full bg-slate-950/40 border border-slate-800 rounded-3xl p-6 md:p-10 shadow-2xl backdrop-blur-sm">
-                <div class="text-center mb-6">
-                    <span class="bg-blue-500/10 text-blue-400 border border-blue-500/30 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest inline-block mb-4">
-                        <i class="fa-solid fa-bolt mr-1"></i> Competencia en Tiempo Real
-                    </span>
-                    <h2 class="header-font text-3xl md:text-5xl font-extrabold mb-3 leading-tight bg-gradient-to-r from-blue-400 via-sky-300 to-indigo-400 bg-clip-text text-transparent">
-                        Desafío Ruta Segura PESV
-                    </h2>
-                    <p class="text-slate-300 max-w-lg mx-auto text-xs md:text-sm leading-relaxed mb-1">
-                        ¡Entrenamiento de PAR Servicios según la Resolución 40595 de 2022! El ganador será quien complete las fases en el **menor tiempo posible**.
-                    </p>
-                    <p class="text-slate-500 text-[11px] italic max-w-md mx-auto">
-                        Basado en los contenidos oficiales de: <strong class="text-slate-400">Plan-Estrategico-de-Seguridad-Viallll.pptx (4).pdf</strong>
-                    </p>
-                </div>
-
-                <!-- Caja de ingreso y salas -->
-                <div class="bg-slate-900/60 p-6 rounded-2xl border border-slate-800/80 max-w-md mx-auto space-y-4 shadow-inner">
-                    <div id="connection-badge-container" class="text-center pb-2">
-                        <!-- El estado de la conexión se insertará dinámicamente -->
-                        <span id="conn-badge" class="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-block">
-                           <i class="fa-solid fa-spinner animate-spin mr-1.5"></i> Comprobando Servidores SST...
-                        </span>
-                    </div>
-
-                    <div>
-                        <label class="block text-slate-400 text-xs font-bold uppercase tracking-wider mb-2" for="player-name">Tu Nombre Completo</label>
-                        <input type="text" id="player-name" placeholder="Ej. Carlos Mendoza" class="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-semibold transition-all text-sm">
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-slate-400 text-xs font-bold uppercase tracking-wider mb-2" for="room-code">Código de Sala</label>
-                            <input type="text" id="room-code" placeholder="Ej. PESV" class="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold tracking-widest transition-all text-sm text-center uppercase">
-                        </div>
-                        <div class="flex flex-col justify-end">
-                            <button onclick="joinRoom()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-3 rounded-xl transition-all text-xs border border-blue-500 hover:border-blue-400 flex items-center justify-center gap-1 shadow-lg shadow-blue-600/10">
-                                <i class="fa-solid fa-right-to-bracket"></i> Ingresar / Crear
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="lobby-status-container" class="hidden pt-4 border-t border-slate-800/60 text-center">
-                        <div class="flex items-center justify-center gap-2 text-emerald-400 text-xs font-bold animate-pulse">
-                            <i class="fa-solid fa-users"></i> Sala Activa: <span id="lobby-room-display">---</span>
-                        </div>
-                        <p class="text-[10px] text-slate-400 mt-1">¡Todo listo! Inicia la carrera de inmediato para calificar en el tablero.</p>
-                        
-                        <button onclick="startMultiplayerRace()" class="mt-4 w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all flex items-center justify-center gap-2 text-base transform hover:-translate-y-0.5 active:translate-y-0">
-                            ¡Comenzar Carrera de Tiempo! <i class="fa-solid fa-gauge-simple-high animate-pulse"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PANTALLA 2: FASE 1 - INSPECCIÓN PREOPERACIONAL -->
-            <div id="screen-phase1" class="hidden w-full bg-slate-950/40 border border-slate-800 rounded-3xl p-6 shadow-2xl">
-                <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800/50 pb-4">
-                    <div>
-                        <span class="bg-blue-500/10 text-blue-400 border border-blue-500/30 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider inline-block mb-1">Fase 1 de 3</span>
-                        <h3 class="header-font text-xl font-bold text-slate-100">Inspección de Seguridad del Vehículo</h3>
-                    </div>
-                    <div class="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-right shrink-0">
-                        <p class="text-[9px] text-slate-400 font-bold uppercase">Validación Obligatoria</p>
-                        <p id="p1-progress-text" class="text-xs font-black text-blue-400">0 de 5 revisados</p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-                    <div class="lg:col-span-4 space-y-4">
-                        <p class="text-xs text-slate-300 leading-relaxed">
-                            Antes de iniciar cualquier trayecto laboral en PAR Servicios, es obligatorio realizar la verificación físico-mecánica de tu vehículo para asegurar el pilar de <strong class="text-emerald-400">Vehículos Seguros</strong>.
-                        </p>
-                        <div class="bg-blue-950/20 border border-blue-900/40 p-4 rounded-xl text-xs text-blue-300 space-y-2">
-                            <p class="font-bold flex items-center gap-2"><i class="fa-solid fa-circle-info"></i> INSTRUCCIONES:</p>
-                            <p>Haz clic sobre los <strong class="text-amber-400">5 círculos parpadeantes</strong> en el vehículo para inspeccionar cada elemento clave y responder la verificación del PESV.</p>
-                        </div>
-                    </div>
-
-                    <!-- Visualizador interactivo del auto -->
-                    <div class="lg:col-span-8 bg-slate-950/80 border border-slate-850 rounded-2xl p-4 flex flex-col items-center justify-center relative min-h-[300px]">
-                        
-                        <div class="relative w-full max-w-lg aspect-[16/10] bg-slate-900/50 rounded-2xl border border-slate-800/80 p-4 flex items-center justify-center">
-                            
-                            <!-- SVG de Silueta de Auto Corporativo -->
-                            <svg viewBox="0 0 600 300" class="w-full h-auto text-slate-800 fill-current max-h-[220px]">
-                                <path d="M 120,200 Q 110,200 100,190 L 80,180 Q 50,170 50,130 L 50,110 Q 50,90 70,80 L 150,80 Q 180,30 240,30 L 400,30 Q 460,30 490,80 L 530,90 Q 560,100 560,130 L 560,160 Q 560,180 540,180 L 520,180 Q 510,180 500,170 C 470,220 410,220 380,170 L 260,170 C 230,220 170,220 140,170 L 130,170 Q 125,170 120,200 Z" opacity="0.1"/>
-                                <path d="M 120,200 Q 110,200 100,190 L 80,180 Q 50,170 50,130 L 50,110 Q 50,90 70,80 L 150,80 Q 180,30 240,30 L 400,30 Q 460,30 490,80 L 530,90 Q 560,100 560,130 L 560,160 Q 560,180 540,180 L 520,180 Q 510,180 500,170 C 470,220 410,220 380,170 L 260,170 C 230,220 170,220 140,170 L 130,170 Q 125,170 120,200 Z" stroke="#3b82f6" stroke-width="3" fill="none"/>
-                                <path d="M 175,80 L 240,45 L 310,45 L 310,80 Z" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
-                                <path d="M 325,80 L 325,45 L 395,45 L 445,80 Z" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
-                                <circle cx="155" cy="180" r="30" fill="#0f172a" stroke="#3b82f6" stroke-width="2"/>
-                                <circle cx="155" cy="180" r="12" fill="#334155"/>
-                                <circle cx="445" cy="180" r="30" fill="#0f172a" stroke="#3b82f6" stroke-width="2"/>
-                                <circle cx="445" cy="180" r="12" fill="#334155"/>
-                                <path d="M 50,115 Q 40,120 50,125 Z" fill="#eab308"/>
-                                <path d="M 550,120 Q 560,125 550,130 Z" fill="#ef4444"/>
-                            </svg>
-
-                            <!-- NODOS INTERACTIVOS (Ubicaciones en el auto) -->
-                            <!-- Frenos -->
-                            <button onclick="openInspectionModal('brakes')" id="node-brakes" class="absolute top-[60%] left-[22%] -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-blue-500 border-2 border-white text-white font-bold flex items-center justify-center pulse-element focus:outline-none hover:bg-blue-400 transition-colors">
-                                <i class="fa-solid fa-gauge-simple-high text-xs"></i>
-                            </button>
-                            <!-- Llantas -->
-                            <button onclick="openInspectionModal('tyres')" id="node-tyres" class="absolute top-[65%] left-[30%] -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-blue-500 border-2 border-white text-white font-bold flex items-center justify-center pulse-element focus:outline-none hover:bg-blue-400 transition-colors">
-                                <i class="fa-solid fa-circle-dot text-xs"></i>
-                            </button>
-                            <!-- Luces -->
-                            <button onclick="openInspectionModal('lights')" id="node-lights" class="absolute top-[43%] left-[10%] -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-blue-500 border-2 border-white text-white font-bold flex items-center justify-center pulse-element focus:outline-none hover:bg-blue-400 transition-colors">
-                                <i class="fa-solid fa-lightbulb text-xs"></i>
-                            </button>
-                            <!-- Kit de Carretera -->
-                            <button onclick="openInspectionModal('kit')" id="node-kit" class="absolute top-[40%] left-[80%] -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-blue-500 border-2 border-white text-white font-bold flex items-center justify-center pulse-element focus:outline-none hover:bg-blue-400 transition-colors">
-                                <i class="fa-solid fa-toolbox text-xs"></i>
-                            </button>
-                            <!-- Cinturón de seguridad -->
-                            <button onclick="openInspectionModal('belt')" id="node-belt" class="absolute top-[35%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-blue-500 border-2 border-white text-white font-bold flex items-center justify-center pulse-element focus:outline-none hover:bg-blue-400 transition-colors">
-                                <i class="fa-solid fa-user-shield text-xs"></i>
-                            </button>
-                        </div>
-
-                        <!-- Botón de continuación -->
-                        <button id="btn-p1-next" disabled onclick="nextPhase()" class="mt-6 px-8 py-3 bg-slate-850 text-slate-600 font-bold rounded-xl cursor-not-allowed transition-all flex items-center gap-2">
-                            Avanzar a Ruta Vial <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PANTALLA 3: FASE 2 - RUTA DEL SABER (DECISIONES EN VÍA) -->
-            <div id="screen-phase2" class="hidden w-full bg-slate-950/40 border border-slate-800 rounded-3xl p-6 shadow-2xl">
-                <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800/50 pb-4">
-                    <div>
-                        <span class="bg-blue-500/10 text-blue-400 border border-blue-500/30 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider inline-block mb-1">Fase 2 de 3</span>
-                        <h3 class="header-font text-xl font-bold text-slate-100">La Vía del Saber (Desafíos en Ruta)</h3>
-                    </div>
-                    <div class="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-right shrink-0">
-                        <p class="text-[9px] text-slate-400 font-bold uppercase">Progreso</p>
-                        <p id="p2-progress-badge" class="text-xs font-black text-amber-400">Escenario 1 de 3</p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    <div class="lg:col-span-4 space-y-4">
-                        <p class="text-xs text-slate-300 leading-relaxed">
-                            Durante tus desplazamientos laborales o con fines operacionales en PAR Servicios, te enfrentarás a situaciones de alto riesgo. Elige la mejor acción según las políticas del PESV corporativo.
-                        </p>
-                        
-                        <!-- Mini mapa visual de progreso en eventos -->
-                        <div class="space-y-2 pt-2">
-                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Hitos de la Ruta</p>
-                            <div class="flex gap-2">
-                                <div id="badge-event-0" class="flex-1 py-2 text-center rounded-lg bg-slate-900 text-slate-600 text-[9px] font-bold uppercase border border-slate-800">1. Alerta</div>
-                                <div id="badge-event-1" class="flex-1 py-2 text-center rounded-lg bg-slate-900 text-slate-600 text-[9px] font-bold uppercase border border-slate-800">2. Emergencia</div>
-                                <div id="badge-event-2" class="flex-1 py-2 text-center rounded-lg bg-slate-900 text-slate-600 text-[9px] font-bold uppercase border border-slate-800">3. Transporte</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Simulador de conducción -->
-                    <div class="lg:col-span-8 bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden flex flex-col h-[420px] relative">
-                        <div class="flex-grow road-anim flex flex-col justify-between p-6">
-                            <!-- Líneas de carretera -->
-                            <div class="road-line" style="top: 10%;"></div>
-                            <div class="road-line" style="top: 50%;"></div>
-                            <div class="road-line" style="top: 90%;"></div>
-
-                            <!-- HUD del Vehículo -->
-                            <div class="flex justify-between items-start z-10">
-                                <div class="bg-slate-900/95 border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-2">
-                                    <i class="fa-solid fa-gauge text-emerald-400 text-xs"></i>
-                                    <span class="text-[10px] font-bold text-slate-200">50 km/h (Límite Seguro)</span>
-                                </div>
-                                <div class="bg-slate-900/95 border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-2">
-                                    <i class="fa-solid fa-triangle-exclamation text-amber-500 text-xs"></i>
-                                    <span id="p2-distance" class="text-[10px] font-bold text-slate-200">En Tránsito</span>
-                                </div>
-                            </div>
-
-                            <!-- Evento de Ruta Activo -->
-                            <div id="road-event-container" class="bg-slate-900/95 border border-slate-800 rounded-2xl p-4 shadow-2xl z-10 max-w-md mx-auto transform transition-all duration-300">
-                                <!-- Se llena dinámicamente -->
-                            </div>
-
-                            <!-- Barra de Monitoreo -->
-                            <div class="flex justify-center items-end z-10">
-                                <div class="bg-slate-900/95 border-t border-x border-slate-800 px-5 py-1.5 rounded-t-xl text-slate-400 text-[9px] font-bold uppercase tracking-wider flex items-center gap-2">
-                                    <i class="fa-solid fa-circle-notch animate-spin text-blue-500"></i> Sistema de Monitoreo PESV Activo
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PANTALLA 4: FASE 3 - EL RETO FINAL (TRIVIA ACADÉMICA) -->
-            <div id="screen-phase3" class="hidden w-full bg-slate-950/40 border border-slate-800 p-6 md:p-8 rounded-3xl shadow-2xl">
-                <div class="text-center mb-6">
-                    <span class="bg-blue-500/10 text-blue-400 border border-blue-500/30 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-block mb-2">Fase 3 de 3</span>
-                    <h3 class="header-font text-2xl font-bold mb-1">Gran Evaluación del PESV</h3>
-                    <p class="text-xs text-slate-400">Demuestra tus conocimientos técnicos sobre la Resolución 40595 de 2022 y las directrices internas.</p>
-                </div>
-
-                <!-- Progreso de preguntas -->
-                <div class="flex justify-between items-center text-xs text-slate-400 font-bold mb-3">
-                    <span id="trivia-current-num">Pregunta 1 de 5</span>
-                    <span id="trivia-points-badge" class="text-amber-400">Puntos Clave: +25 pts</span>
-                </div>
-                
-                <!-- Barra de progreso lineal -->
-                <div class="w-full bg-slate-900 rounded-full h-1.5 mb-6 overflow-hidden">
-                    <div id="trivia-progress-bar" class="bg-blue-500 h-full w-[20%] transition-all duration-300"></div>
-                </div>
-
-                <!-- Caja de Pregunta -->
-                <div class="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 mb-6">
-                    <h4 id="trivia-question" class="text-sm md:text-base font-bold leading-relaxed">¿Cuál es el marco regulatorio que rige el diseño de los Planes Estratégicos de Seguridad Vial en Colombia?</h4>
-                </div>
-
-                <!-- Opciones -->
-                <div id="trivia-options" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <!-- Se llena dinámicamente -->
-                </div>
-            </div>
-
-            <!-- PANTALLA 5: RESULTADO FINAL & CERTIFICADO DE SEGURIDAD VIAL -->
-            <div id="screen-results" class="hidden w-full space-y-6">
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    
-                    <!-- Resumen de la Carrera y Acciones -->
-                    <div class="lg:col-span-5 bg-slate-950/45 border border-slate-800 p-6 rounded-3xl flex flex-col justify-between">
-                        <div class="text-center lg:text-left">
-                            <span id="badge-qualification" class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-block mb-3">Capacitación Aprobada</span>
-                            <h3 class="header-font text-2xl font-bold mb-2">¡Carrera Finalizada!</h3>
-                            <p class="text-xs text-slate-300 leading-relaxed mb-6">
-                                ¡Felicidades! Has completado el circuito de entrenamiento para el PESV corporativo. Recuerda que la prudencia y el cumplimiento de las normas salvan vidas todos los días.
-                            </p>
-
-                            <!-- Tarjetas de estadísticas de final de juego -->
-                            <div class="grid grid-cols-2 gap-3 text-left mb-6">
-                                <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800/80">
-                                    <span class="text-slate-400 text-[9px] font-bold uppercase block mb-1">Tiempo de Carrera</span>
-                                    <span id="res-time" class="text-xl font-mono font-black text-emerald-400">00:00.00</span>
-                                </div>
-                                <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800/80">
-                                    <span class="text-slate-400 text-[9px] font-bold uppercase block mb-1">Rendimiento</span>
-                                    <span id="res-score" class="text-xl font-extrabold text-amber-400 block mt-1">0 Ptos</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="space-y-3 pt-4 border-t border-slate-900">
-                            <button onclick="window.print()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 text-sm">
-                                <i class="fa-solid fa-print"></i> Imprimir Certificado de SST
-                            </button>
-                            <button onclick="restartGame()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-xs">
-                                <i class="fa-solid fa-rotate-right"></i> Volver a Jugar
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Certificado formal listo para impresión física o digital -->
-                    <div class="lg:col-span-7 bg-white text-slate-900 p-6 md:p-8 rounded-3xl border border-slate-200 shadow-2xl flex flex-col justify-between relative overflow-hidden min-h-[460px]">
-                        <!-- Bordes estéticos de Certificación -->
-                        <div class="absolute inset-0 border-[14px] border-slate-100 pointer-events-none"></div>
-                        <div class="absolute -top-16 -right-16 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl"></div>
-                        <div class="absolute -bottom-16 -left-16 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl"></div>
-
-                        <!-- Cabecera del Certificado -->
-                        <div class="text-center relative z-10">
-                            <div class="flex justify-center items-center gap-2 mb-2">
-                                <div class="bg-slate-900 text-white p-1 rounded-lg">
-                                    <i class="fa-solid fa-shield-halved text-xs"></i>
-                                </div>
-                                <span class="font-black tracking-wider text-[10px] uppercase text-slate-800">PAR Servicios S.A.S</span>
-                            </div>
-                            <h4 class="font-black text-lg uppercase tracking-widest text-slate-800 border-b-2 border-slate-900 inline-block pb-1">Certificado de Aprobación PESV</h4>
-                            <p class="text-[8px] text-slate-500 font-bold uppercase tracking-wider mt-2">En cumplimiento con los lineamientos de la Resolución 40595 de 2022</p>
-                        </div>
-
-                        <!-- Cuerpo del Certificado -->
-                        <div class="my-6 text-center relative z-10">
-                            <p class="text-xs text-slate-500 italic">Por medio del presente se certifica la idoneidad y capacitación a:</p>
-                            <p id="cert-player-name" class="font-extrabold text-xl text-blue-950 uppercase my-3 border-b border-slate-200 inline-block px-4 py-1">Carlos Mendoza</p>
-                            <p class="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
-                                Por haber completado de manera satisfactoria y de forma lúdico-competitiva los módulos de la <strong class="text-slate-900">Capacitación Básica del Plan Estratégico de Seguridad Vial (PESV)</strong> corporativo.
-                            </p>
-                        </div>
-
-                        <!-- Detalles técnicos de la carrera -->
-                        <div class="relative z-10 flex flex-col sm:flex-row justify-between items-center gap-3 border-t border-slate-100 pt-3">
-                            <div class="text-center sm:text-left">
-                                <p class="text-[8px] text-slate-400 uppercase font-bold">Fecha de Aprobación</p>
-                                <p id="cert-date" class="text-xs font-bold text-slate-700">---</p>
-                            </div>
-                            
-                            <div class="flex items-center gap-2">
-                                <div class="w-10 h-10 rounded-full border-2 border-emerald-600 flex items-center justify-center text-emerald-600 font-black text-[8px] uppercase tracking-tighter text-center leading-none transform -rotate-12 bg-emerald-50">
-                                    SST<br>APROBADO
-                                </div>
-                                <div class="text-left">
-                                    <p class="text-[8px] text-slate-400 uppercase font-bold">Insignia Alcanzada</p>
-                                    <p id="cert-level" class="text-xs font-bold text-slate-800">Conductor Veloz</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- COLUMNA DERECHA: TABLA DE CLASIFICACIÓN EN VIVO (MULTIPLAYER LEADERBOARD) -->
-        <aside class="lg:col-span-4 w-full bg-slate-950 border border-slate-800 rounded-3xl p-5 shadow-2xl relative">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
-                <div class="flex items-center gap-2">
-                    <span class="flex h-2 w-2 relative">
-                        <span id="conn-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                        <span id="conn-dot" class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                    </span>
-                    <h3 id="aside-title" class="header-font text-xs font-extrabold uppercase tracking-wider text-slate-200">Clasificación Local</h3>
-                </div>
-                <span id="active-players-count" class="bg-blue-500/10 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded-full">0 Conectados</span>
-            </div>
-
-            <!-- Caja contenedora de jugadores conectados en la misma sala -->
-            <div class="space-y-2 max-h-[460px] overflow-y-auto pr-1" id="leaderboard-container">
-                <div class="text-center py-8 text-slate-500 text-xs">
-                    <i class="fa-solid fa-users text-2xl mb-2 text-slate-700 block"></i>
-                    Ingresa tus datos para ver la tabla de posiciones en tiempo real.
-                </div>
-            </div>
-        </aside>
-
-    </main>
-
-    <!-- PANTALLA AUXILIAR: MODAL DE REVISIÓN INDIVIDUAL (FASE 1) -->
-    <div id="modal-inspection" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
-            <button onclick="closeInspectionModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
-                <i class="fa-solid fa-xmark text-xl"></i>
-            </button>
-            
-            <div class="text-center mb-5">
-                <div id="modal-icon-container" class="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-3"></div>
-                <h4 id="modal-title" class="header-font text-lg font-bold">Elemento de Control</h4>
-                <p id="modal-desc" class="text-[10px] text-slate-400 mt-1">Criterio de validación diaria del PESV</p>
-            </div>
-
-            <div class="bg-slate-950/50 p-4 rounded-xl mb-5 border border-slate-800/60">
-                <p id="modal-question" class="text-xs md:text-sm text-slate-200 font-medium leading-relaxed">¿Pregunta de verificación?</p>
-            </div>
-
-            <div class="space-y-2.5" id="modal-options">
-                <!-- Respuestas dinámicas -->
-            </div>
-        </div>
-    </div>
-
-    <!-- NOTIFICACIÓN INTEGRADA (Sustituto de alert para respetar directivas) -->
-    <div id="custom-toast" class="fixed bottom-6 right-6 z-50 bg-slate-950 border border-blue-900/50 p-4 rounded-2xl shadow-2xl max-w-sm hidden transform translate-y-10 transition-all duration-300">
-        <div class="flex items-start gap-3">
-            <div id="toast-icon-bg" class="p-2 bg-blue-600/15 text-blue-400 rounded-xl">
-                <i id="toast-icon" class="fa-solid fa-info"></i>
-            </div>
+          <form id="form-register" class="w-full max-w-md space-y-4" onsubmit="event.preventDefault(); startRegistration();">
             <div>
-                <h5 id="toast-title" class="text-xs font-black uppercase text-slate-200">Mensaje de SST</h5>
-                <p id="toast-body" class="text-[11px] text-slate-400 mt-0.5 leading-relaxed">Mensaje del sistema.</p>
+              <label class="block text-xs uppercase tracking-wider text-slate-400 font-bold mb-1.5">Nombre Completo</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
+                  <i class="fa-solid fa-user"></i>
+                </span>
+                <input type="text" id="input-name" required placeholder="Ej. Carlos Mendoza" 
+                       class="w-full bg-slate-900/80 border border-slate-700/60 rounded-xl py-3 pl-10 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-medium">
+              </div>
             </div>
+
+            <div>
+              <label class="block text-xs uppercase tracking-wider text-slate-400 font-bold mb-1.5">Código de la Sala de Capacitación</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
+                  <i class="fa-solid fa-door-open"></i>
+                </span>
+                <input type="text" id="input-room" required placeholder="Ej. PESV o SST2026" 
+                       class="w-full bg-slate-900/80 border border-slate-700/60 rounded-xl py-3 pl-10 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-medium uppercase">
+              </div>
+              <p class="text-[10px] text-slate-500 mt-1.5">Usa cualquier código. Si no hay conexión, se activará el Modo de Simulación de Competidores.</p>
+            </div>
+
+            <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all transform active:scale-95 flex items-center justify-center gap-2 text-base">
+              Ingresar a la Carrera <i class="fa-solid fa-flag-checkered"></i>
+            </button>
+          </form>
         </div>
-    </div>
 
-    <!-- FOOTER GLOBAL -->
-    <footer class="bg-slate-950 py-3.5 px-6 text-center text-[10px] text-slate-500 border-t border-slate-900">
-        <p>© 2026 PAR Servicios S.A.S. - Sistema de Gestión en Seguridad y Salud en el Trabajo (SST)</p>
-    </footer>
-
-    <script type="module">
-        // Importación de SDK de Firebase
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, updateDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // CONFIGURACIÓN DE FIREBASE (Asegurando fallback offline automático si está vacío)
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'pesv-multiplayer-race';
-        let firebaseConfig = {
-            apiKey: "", 
-            authDomain: "default-app-id.firebaseapp.com",
-            projectId: "default-app-id",
-            storageBucket: "default-app-id.appspot.com",
-            messagingSenderId: "12345",
-            appId: "1:12345:web:12345"
-        };
-
-        if (typeof __firebase_config !== 'undefined') {
-            try {
-                firebaseConfig = JSON.parse(__firebase_config);
-            } catch(e) {
-                console.error("Error al decodificar la configuración de base de datos:", e);
-            }
-        }
-
-        // Variables de estado de Red
-        let app, db, auth;
-        let isOfflineMode = false;
-        let userId = crypto.randomUUID();
-        let unsubscribeLeaderboard = null;
-
-        // Intentar iniciar Firebase, de lo contrario cambiar a Modo Offline inmediatamente
-        try {
-            if (!firebaseConfig.apiKey || firebaseConfig.projectId === "default-app-id") {
-                isOfflineMode = true;
-                console.log("No se detectaron credenciales en la nube de Firebase. Activando Modo de Simulación de Competencia.");
-            } else {
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-            }
-        } catch (err) {
-            isOfflineMode = true;
-            console.error("Error al inicializar los servicios en la nube:", err);
-        }
-
-        // Autenticación segura según directivas con fallback local inmediato
-        async function authenticateUser() {
-            const badge = document.getElementById('conn-badge');
-            const ping = document.getElementById('conn-ping');
-            const dot = document.getElementById('conn-dot');
-            const asideTitle = document.getElementById('aside-title');
-
-            if (isOfflineMode || !auth) {
-                isOfflineMode = true;
-                badge.className = "bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-block";
-                badge.innerHTML = `<i class="fa-solid fa-gamepad mr-1.5"></i> Modo Entrenamiento Local`;
-                ping.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75";
-                dot.className = "relative inline-flex rounded-full h-2 w-2 bg-blue-500";
-                asideTitle.innerText = "Competidores Locales";
-                return;
-            }
-
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                userId = auth.currentUser ? auth.currentUser.uid : crypto.randomUUID();
-                
-                // Conectado exitosamente
-                badge.className = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-block";
-                badge.innerHTML = `<i class="fa-solid fa-cloud mr-1.5"></i> Servidor Multi-Jugador Listo`;
-                ping.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
-                dot.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
-                asideTitle.innerText = "Competidores Online";
-            } catch (err) {
-                console.error("Fallo de autenticación en la nube. Cambiando a Modo Local:", err);
-                isOfflineMode = true;
-                badge.className = "bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-block";
-                badge.innerHTML = `<i class="fa-solid fa-gamepad mr-1.5"></i> Modo Entrenamiento Local`;
-                ping.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75";
-                dot.className = "relative inline-flex rounded-full h-2 w-2 bg-blue-500";
-                asideTitle.innerText = "Competidores Locales";
-            }
-        }
-
-        // Ejecutar autenticación al cargar la página
-        window.onload = async () => {
-            await authenticateUser();
-        };
-
-        // AUDIO CON WEB AUDIO API
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSound(type) {
-            try {
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                if (type === 'click') {
-                    osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.1);
-                } else if (type === 'correct') {
-                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.08); // E5
-                    osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.16); // G5
-                    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.35);
-                } else if (type === 'wrong') {
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(160, audioCtx.currentTime);
-                    osc.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.25);
-                    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.25);
-                } else if (type === 'penalty') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(220, audioCtx.currentTime);
-                    osc.frequency.linearRampToValueAtTime(110, audioCtx.currentTime + 0.4);
-                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.4);
-                } else if (type === 'win') {
-                    osc.frequency.setValueAtTime(261.63, audioCtx.currentTime); 
-                    osc.frequency.setValueAtTime(329.63, audioCtx.currentTime + 0.1); 
-                    osc.frequency.setValueAtTime(392.00, audioCtx.currentTime + 0.2); 
-                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime + 0.3); 
-                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.5);
-                }
-            } catch (e) {
-                console.log("Audio no soportado en este navegador.");
-            }
-        }
-
-        // VARIABLES DE ESTADO LOCAL
-        let state = {
-            playerName: "",
-            roomId: "",
-            score: 0,
-            lives: 3,
-            currentPhase: 1,
-            inspectedElements: {
-                brakes: false,
-                tyres: false,
-                lights: false,
-                kit: false,
-                belt: false
-            },
-            currentEventIndex: 0,
-            currentTriviaIndex: 0,
-            // Variables de Tiempo
-            startTime: null,
-            elapsedTime: 0,
-            penaltyTime: 0,
-            timerInterval: null
-        };
-
-        // NOTIFICADOR CUSTOM PARA EVITAR ALERTS
-        function showNotification(title, message, type = 'info') {
-            const toast = document.getElementById('custom-toast');
-            const iconBg = document.getElementById('toast-icon-bg');
-            const icon = document.getElementById('toast-icon');
-            const tTitle = document.getElementById('toast-title');
-            const tBody = document.getElementById('toast-body');
-
-            tTitle.innerText = title;
-            tBody.innerText = message;
-
-            if (type === 'error') {
-                iconBg.className = "p-2 bg-rose-600/15 text-rose-400 rounded-xl";
-                icon.className = "fa-solid fa-triangle-exclamation";
-            } else if (type === 'success') {
-                iconBg.className = "p-2 bg-emerald-600/15 text-emerald-400 rounded-xl";
-                icon.className = "fa-solid fa-circle-check";
-            } else {
-                iconBg.className = "p-2 bg-blue-600/15 text-blue-400 rounded-xl";
-                icon.className = "fa-solid fa-info";
-            }
-
-            toast.classList.remove('hidden', 'translate-y-10');
-            toast.classList.add('translate-y-0');
-
-            setTimeout(() => {
-                toast.classList.add('translate-y-10');
-                setTimeout(() => toast.classList.add('hidden'), 300);
-            }, 4500);
-        }
-
-        // SISTEMA DE SIMULACIÓN DE COMPETIDORES PARA MODO LOCAL
-        let localCompetitors = [];
-        let localSimInterval = null;
-
-        function setupLocalSimulation() {
-            localCompetitors = [
-                {
-                    userId: 'bot-1',
-                    name: 'Ing. Alejandro Pérez (SST)',
-                    roomId: state.roomId,
-                    score: 0,
-                    status: 'lobby',
-                    currentPhase: 1,
-                    elapsedTime: 0,
-                    baseSpeed: 1.05, // Coeficiente de avance por segundo
-                    scoreMultiplier: 1.0
-                },
-                {
-                    userId: 'bot-2',
-                    name: 'Elena Gómez (Operaciones)',
-                    roomId: state.roomId,
-                    score: 0,
-                    status: 'lobby',
-                    currentPhase: 1,
-                    elapsedTime: 0,
-                    baseSpeed: 0.88,
-                    scoreMultiplier: 1.0
-                }
-            ];
-            
-            renderLeaderboard([
-                { userId: userId, name: state.playerName, roomId: state.roomId, score: 0, status: 'lobby', currentPhase: 1, elapsedTime: 0 },
-                ...localCompetitors
-            ]);
-        }
-
-        function startLocalSimulation() {
-            if (!isOfflineMode) return;
-            
-            localCompetitors.forEach(bot => {
-                bot.status = 'playing';
-                bot.startTime = performance.now();
-                bot.elapsedTime = 0;
-            });
-
-            clearInterval(localSimInterval);
-            localSimInterval = setInterval(() => {
-                const now = performance.now();
-                let allPlayers = [
-                    {
-                        userId: userId,
-                        name: state.playerName,
-                        roomId: state.roomId,
-                        score: state.score,
-                        status: state.lives <= 0 ? 'failed' : (state.currentPhase === 4 ? 'finished' : 'playing'),
-                        currentPhase: state.currentPhase,
-                        elapsedTime: state.elapsedTime
-                    }
-                ];
-
-                localCompetitors.forEach(bot => {
-                    if (bot.status === 'playing') {
-                        const elapsed = now - bot.startTime;
-                        bot.elapsedTime = elapsed;
-
-                        // Simular progreso de fase basado en tiempo transcurrido
-                        const simulatedSecs = (elapsed / 1000) * bot.baseSpeed;
-                        
-                        if (simulatedSecs < 25) {
-                            bot.currentPhase = 1;
-                            bot.score = Math.floor(simulatedSecs * 2.8);
-                        } else if (simulatedSecs < 60) {
-                            bot.currentPhase = 2;
-                            bot.score = 70 + Math.floor((simulatedSecs - 25) * 1.8);
-                        } else if (simulatedSecs < 100) {
-                            bot.currentPhase = 3;
-                            bot.score = 140 + Math.floor((simulatedSecs - 60) * 2.2);
-                        } else {
-                            bot.status = 'finished';
-                            bot.score = 225; // Completado con éxito
-                        }
-                    }
-                    allPlayers.push(bot);
-                });
-
-                // Ordenar posiciones
-                allPlayers.sort((a, b) => {
-                    if (a.status === 'failed' && b.status !== 'failed') return 1;
-                    if (b.status === 'failed' && a.status !== 'failed') return -1;
-                    if (a.status === 'finished' && b.status !== 'finished') return -1;
-                    if (b.status === 'finished' && a.status !== 'finished') return 1;
-                    if (a.status === 'finished' && b.status === 'finished') {
-                        return a.elapsedTime - b.elapsedTime;
-                    }
-                    if (b.score !== a.score) return b.score - a.score;
-                    return a.elapsedTime - b.elapsedTime;
-                });
-
-                renderLeaderboard(allPlayers);
-            }, 1000);
-        }
-
-        // DATOS DE FASE 1: INSPECCIÓN PREOPERACIONAL
-        const inspectionDetails = {
-            brakes: {
-                title: "Frenos y Líquidos",
-                iconClass: "fa-solid fa-gauge-simple-high text-2xl text-emerald-400",
-                bgColor: "bg-emerald-500/10 border border-emerald-500/30",
-                question: "Al realizar la inspección de tu vehículo, notas que el nivel de líquido de frenos está bajo. ¿Cómo proceder?",
-                options: [
-                    { text: "Hacer un viaje corto de trabajo, asumiendo que el freno responderá provisionalmente.", score: 0, correct: false },
-                    { text: "No operar el vehículo, reportar al supervisor de SST de inmediato y programar el servicio técnico.", score: 20, correct: true },
-                    { text: "Completar la inspección como aprobada y dejar anotado el detalle para el fin de semana.", score: 0, correct: false }
-                ]
-            },
-            tyres: {
-                title: "Llantas (Labrado y Presión)",
-                iconClass: "fa-solid fa-circle-dot text-2xl text-blue-400",
-                bgColor: "bg-blue-500/10 border border-blue-500/30",
-                question: "Según el PESV colombiano, ¿cuál es el labrado mínimo aceptable para autos de la empresa en misión laboral?",
-                options: [
-                    { text: "0.5 milímetros de labrado.", score: 0, correct: false },
-                    { text: "1.6 milímetros de labrado para garantizar el coeficiente de fricción y agarre vial.", score: 20, correct: true },
-                    { text: "Cualquier grosor es válido siempre y cuando la presión de aire sea la recomendada.", score: 0, correct: false }
-                ]
-            },
-            lights: {
-                title: "Sistema de Alumbrado",
-                iconClass: "fa-solid fa-lightbulb text-2xl text-yellow-400",
-                bgColor: "bg-yellow-500/10 border border-yellow-500/30",
-                question: "Encuentras que una de las luces direccionales traseras no funciona. ¿Cuál es el riesgo normativo de esto?",
-                options: [
-                    { text: "Impide comunicar las maniobras de cambio de carril a los demás actores viales, elevando la siniestralidad.", score: 20, correct: true },
-                    { text: "No hay riesgo directo mientras conduzcas solo a la luz del día.", score: 0, correct: false },
-                    { text: "Ninguno, ya que las luces direccionales son opcionales en perímetros urbanos.", score: 0, correct: false }
-                ]
-            },
-            kit: {
-                title: "Kit de Carretera Obligatorio",
-                iconClass: "fa-solid fa-toolbox text-2xl text-orange-400",
-                bgColor: "bg-orange-500/10 border border-orange-500/30",
-                question: "Según la reglamentación vial del país, ¿qué elementos componen el kit de carretera completo?",
-                options: [
-                    { text: "Extintor vigente, gato, cruceta, 2 señales de advertencia (triángulos), botiquín, linterna y herramientas básicas.", score: 20, correct: true },
-                    { text: "Únicamente cables pasacorriente, un destornillador y el manual técnico.", score: 0, correct: false },
-                    { text: "Repuesto de aire de llanta, guantes de latex y cargador portátil para celulares.", score: 0, correct: false }
-                ]
-            },
-            belt: {
-                title: "Sistemas de Retención Activa",
-                iconClass: "fa-solid fa-user-shield text-2xl text-purple-400",
-                bgColor: "bg-purple-500/10 border border-purple-500/30",
-                question: "¿Cuál es el protocolo corporativo para el uso del cinturón de seguridad en PAR Servicios?",
-                options: [
-                    { text: "Es voluntario si el viaje es menor a 15 minutos en zonas de poco tráfico.", score: 0, correct: false },
-                    { text: "Es de carácter obligatorio y permanente para todos los ocupantes del vehículo en cualquier trayecto.", score: 20, correct: true },
-                    { text: "Aplica únicamente para el conductor del vehículo pesado.", score: 0, correct: false }
-                ]
-            }
-        };
-
-        // DATOS DE FASE 2: EVENTOS EN RUTA
-        const roadEvents = [
-            {
-                title: "Llamada urgente de oficina",
-                desc: "Vas manejando de camino a la sede de un cliente y tu celular empieza a sonar insistentemente con una llamada de tu supervisor.",
-                icon: "fa-solid fa-phone-volume text-rose-500 animate-bounce text-3xl",
-                choices: [
-                    { text: "Buscar un sitio permitido para parquear, detener la marcha con seguridad y responder la llamada.", correct: true, feedback: "¡Muy bien! Las llamadas laborales pueden esperar. Evitar distractores cognitivos es ley en el PESV.", pts: 30 },
-                    { text: "Responder velozmente usando el altavoz o audífonos de manos libres sin reducir la velocidad.", correct: false, feedback: "La distracción en carretera eleva la probabilidad de choques. Sumas +10 segundos de penalización y pierdes una vida.", penalty: true }
-                ]
-            },
-            {
-                title: "Protocolo PAS en accidentes",
-                desc: "Un carro choca fuertemente delante de ti en la vía. Hay un herido consciente y tráfico acumulándose. ¿Cómo actúas?",
-                icon: "fa-solid fa-truck-medical text-amber-400 text-3xl animate-pulse",
-                choices: [
-                    { text: "Implementar Protocolo PAS: Proteger la zona con triángulos, Avisar llamando al 123, y Socorrer sin mover lesionados cervicales.", correct: true, feedback: "¡Excelente! Utilizar la secuencia PAS (Proteger, Avisar, Socorrer) salva vidas de forma estructurada.", pts: 30 },
-                    { text: "Mover rápidamente al lesionado para sacarlo de la calzada y despejar la vía antes de señalizar.", correct: false, feedback: "Procedimiento inseguro. Sin asegurar la vía puedes provocar un doble siniestro. Sumas +10s de penalización y pierdes una vida.", penalty: true }
-                ]
-            },
-            {
-                title: "Transporte alternativo de misiones",
-                desc: "El vehículo asignado por la empresa está averiado. Un compañero te ofrece llevarte al taller de misiones en su moto particular.",
-                icon: "fa-solid fa-motorcycle text-indigo-400 text-3xl",
-                choices: [
-                    { text: "Rechazar la oferta e informar a SST. Proceder a tomar un transporte público o taxi autorizado por la empresa.", correct: true, feedback: "¡Excelente decisión! El uso de motocicletas, bicicletas o patinetas está prohibido en misiones de PAR Servicios debido a su alta siniestralidad.", pts: 30 },
-                    { text: "Aceptar para evitar contratiempos comerciales, prometiendo manejar con cuidado extremo.", correct: false, feedback: "Violación directa del pilar de transportes autorizados del PESV de PAR Servicios. Sumas +10s de penalización y pierdes una vida.", penalty: true }
-                ]
-            }
-        ];
-
-        // DATOS DE FASE 3: TRIVIA DE LA RESOLUCIÓN 40595
-        const triviaQuestions = [
-            {
-                q: "¿Cuál es el fin principal del diseño y ejecución del Plan Estratégico de Seguridad Vial?",
-                options: [
-                    { text: "Garantizar una menor tarifa de peajes nacionales.", correct: false },
-                    { text: "Definir políticas y acciones institucionales destinadas a mitigar y prevenir la siniestralidad vial.", correct: true },
-                    { text: "Incrementar las ventas de flotas comerciales pesadas.", correct: false }
-                ]
-            },
-            {
-                q: "¿Cuáles son los 5 Pilares fundamentales que estructuran el PESV según la ley colombiana?",
-                options: [
-                    { text: "Gestión Institucional, Comportamiento Humano, Vehículos Seguros, Infraestructura Segura y Atención a Víctimas.", correct: true },
-                    { text: "Gerencia, Compras, Logística, Mercadeo y Mantenimiento General.", correct: false },
-                    { text: "Vías Urbanas, Peatones, Conductores de Moto, Autos Particulares y Ciclistas.", correct: false }
-                ]
-            },
-            {
-                q: "Como peatón seguro en tus traslados diarios, ¿qué directiva debes cumplir estrictamente?",
-                options: [
-                    { text: "Caminar por la berma usando auriculares con cancelación de ruido.", correct: false },
-                    { text: "Cruzar únicamente por cebras y puentes, hacer contacto visual con conductores y evitar distractores.", correct: true },
-                    { text: "Cruzar las avenidas rápidamente esquivando carros detenidos.", correct: false }
-                ]
-            },
-            {
-                q: "¿Dónde debes registrar el reporte de un riesgo físico de la vía o incidente laboral?",
-                options: [
-                    { text: "Publicar un mensaje informal en grupos sociales internos.", correct: false },
-                    { text: "Diligenciar el formulario oficial de SST diseñado por PAR Servicios para la seguridad vial.", correct: true },
-                    { text: "Ignorarlo si ocurrió fuera de las oficinas principales.", correct: false }
-                ]
-            },
-            {
-                q: "¿Cuál es la línea única de asistencia inmediata para emergencias viales y ambulancias en el territorio nacional?",
-                options: [
-                    { text: "Número privado de mantenimiento corporativo.", correct: false },
-                    { text: "Línea de Emergencias 123.", correct: true },
-                    { text: "Línea del Ministerio de Transporte.", correct: false }
-                ]
-            }
-        ];
-
-        // REGISTRO O CREACIÓN DE SALA EN TIEMPO REAL
-        window.joinRoom = async function() {
-            playSound('click');
-            const nameInput = document.getElementById('player-name').value.trim();
-            const roomInput = document.getElementById('room-code').value.trim().toUpperCase();
-
-            if (!nameInput) {
-                showNotification("SST Requerido", "Ingresa tu nombre completo para el certificado de la Resolución 40595.", "error");
-                return;
-            }
-            if (!roomInput) {
-                showNotification("Código Requerido", "Ingresa un código de sala para jugar con tus compañeros (Ej. PESV).", "error");
-                return;
-            }
-
-            state.playerName = nameInput;
-            state.roomId = roomInput;
-
-            // Modo offline activo o base de datos no conectada
-            if (isOfflineMode || !auth || !auth.currentUser) {
-                isOfflineMode = true;
-                showNotification("Modo Local", "Iniciando circuito en modo simulación de competencia local.", "info");
-                
-                setupLocalSimulation();
-                
-                document.getElementById('lobby-room-display').innerText = state.roomId + " (Simulado)";
-                document.getElementById('lobby-status-container').classList.remove('hidden');
-                document.getElementById('player-name').disabled = true;
-                document.getElementById('room-code').disabled = true;
-                return;
-            }
-
-            // Flujo multijugador real en la nube
-            const playerDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'players', userId);
-            
-            try {
-                await setDoc(playerDocRef, {
-                    userId: userId,
-                    name: state.playerName,
-                    roomId: state.roomId,
-                    score: 0,
-                    status: 'lobby',
-                    currentPhase: 1,
-                    elapsedTime: 0,
-                    updatedAt: Date.now()
-                });
-
-                document.getElementById('lobby-room-display').innerText = state.roomId;
-                document.getElementById('lobby-status-container').classList.remove('hidden');
-                document.getElementById('player-name').disabled = true;
-                document.getElementById('room-code').disabled = true;
-
-                showNotification("¡Conectado!", `Registrado en la sala multijugador: ${state.roomId}`, "success");
-
-                // Iniciar escucha de competidores en la nube
-                subscribeToLeaderboard();
-
-            } catch (err) {
-                console.error("Error al registrar en Firestore:", err);
-                // Forzar fallback a modo local para que el usuario no quede bloqueado
-                isOfflineMode = true;
-                showNotification("Fallo de Red", "Cambiando automáticamente a modo de simulación local.", "info");
-                setupLocalSimulation();
-                
-                document.getElementById('lobby-room-display').innerText = state.roomId + " (Simulado)";
-                document.getElementById('lobby-status-container').classList.remove('hidden');
-            }
-        };
-
-        // ACTUALIZACIÓN DE ESTADO EN FIRESTORE
-        async function updateLiveStatus(statusObj) {
-            if (isOfflineMode || !auth || !auth.currentUser || !state.roomId) return;
-            const playerDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'players', userId);
-            try {
-                await updateDoc(playerDocRef, {
-                    ...statusObj,
-                    updatedAt: Date.now()
-                });
-            } catch (err) {
-                console.error("No se pudo actualizar el estado de juego en línea:", err);
-            }
-        }
-
-        // MONITOREAR COMPETENCIA EN TIEMPO REAL
-        function subscribeToLeaderboard() {
-            if (unsubscribeLeaderboard) unsubscribeLeaderboard();
-
-            const playersColRef = collection(db, 'artifacts', appId, 'public', 'data', 'players');
-
-            unsubscribeLeaderboard = onSnapshot(playersColRef, (snapshot) => {
-                const playersInRoom = [];
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    if (data.roomId === state.roomId) {
-                        playersInRoom.push(data);
-                    }
-                });
-
-                // Ordenar posiciones
-                playersInRoom.sort((a, b) => {
-                    if (a.status === 'failed' && b.status !== 'failed') return 1;
-                    if (b.status === 'failed' && a.status !== 'failed') return -1;
-                    if (a.status === 'finished' && b.status !== 'finished') return -1;
-                    if (b.status === 'finished' && a.status !== 'finished') return 1;
-                    if (a.status === 'finished' && b.status === 'finished') {
-                        return a.elapsedTime - b.elapsedTime;
-                    }
-                    if (b.score !== a.score) return b.score - a.score;
-                    return a.elapsedTime - b.elapsedTime;
-                });
-
-                renderLeaderboard(playersInRoom);
-            }, (error) => {
-                console.error("Error al suscribirse al tablero de posiciones:", error);
-            });
-        }
-
-        // PINTAR TABLA DE POSICIONES EN PANTALLA
-        function renderLeaderboard(players) {
-            const container = document.getElementById('leaderboard-container');
-            const countBadge = document.getElementById('active-players-count');
-            
-            countBadge.innerText = `${players.length} Conectados`;
-
-            if (players.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-slate-500 text-xs">Aún no hay competidores.</div>`;
-                return;
-            }
-
-            container.innerHTML = "";
-            players.forEach((player, index) => {
-                const position = index + 1;
-                const totalSecs = player.elapsedTime / 1000;
-                const formattedTime = totalSecs > 0 ? `${totalSecs.toFixed(2)}s` : "0.00s";
-
-                // Colores de medalla
-                let medalClass = "bg-slate-900 border border-slate-850 text-slate-400";
-                if (position === 1) medalClass = "bg-amber-500/10 border border-amber-500 text-amber-400 font-extrabold";
-                if (position === 2) medalClass = "bg-slate-300/10 border border-slate-300 text-slate-300 font-extrabold";
-                if (position === 3) medalClass = "bg-amber-700/10 border border-amber-800 text-amber-600 font-extrabold";
-
-                let statusBadge = `<span class="bg-blue-500/10 text-blue-400 text-[8px] font-bold px-1.5 py-0.5 rounded-full border border-blue-500/20">Lobby</span>`;
-                if (player.status === 'playing') {
-                    statusBadge = `<span class="bg-amber-500/10 text-amber-400 text-[8px] font-bold px-1.5 py-0.5 rounded-full border border-amber-500/20 animate-pulse">Fase ${player.currentPhase}</span>`;
-                } else if (player.status === 'finished') {
-                    statusBadge = `<span class="bg-emerald-500/10 text-emerald-400 text-[8px] font-bold px-1.5 py-0.5 rounded-full border border-emerald-500/20"><i class="fa-solid fa-flag"></i> Fin</span>`;
-                } else if (player.status === 'failed') {
-                    statusBadge = `<span class="bg-rose-500/10 text-rose-400 text-[8px] font-bold px-1.5 py-0.5 rounded-full border border-rose-500/20">SST Repetir</span>`;
-                }
-
-                const isMe = player.userId === userId;
-                const highlightBg = isMe ? 'bg-blue-950/30 border-blue-500/40' : 'bg-slate-900/40 border-slate-800/80';
-
-                container.innerHTML += `
-                    <div class="flex items-center justify-between p-3 rounded-2xl border ${highlightBg} transition-all duration-300">
-                        <div class="flex items-center gap-3">
-                            <span class="w-6 h-6 rounded-lg ${medalClass} flex items-center justify-center text-xs">${position}</span>
-                            <div>
-                                <h5 class="text-xs font-bold text-slate-100 ${isMe ? 'text-blue-400 font-extrabold' : ''}">${player.name} ${isMe ? '(Tú)' : ''}</h5>
-                                <p class="text-[9px] text-slate-500 mt-0.5 uppercase font-bold tracking-wider">${player.score} pts • ${formattedTime}</p>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            ${statusBadge}
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        // INICIO DE LA CARRERA DE TIEMPO
-        window.startMultiplayerRace = function() {
-            playSound('click');
-            document.getElementById('screen-intro').classList.add('hidden');
-            document.getElementById('game-stats').classList.remove('hidden');
-            
-            state.startTime = performance.now();
-            state.penaltyTime = 0;
-            state.score = 0;
-            state.lives = 3;
-            state.elapsedTime = 0;
-
-            document.getElementById('stat-room').innerText = state.roomId;
-
-            clearInterval(state.timerInterval);
-            state.timerInterval = setInterval(updateTimerDisplay, 40);
-
-            // Iniciar simulaciones locales de oponentes si aplica
-            if (isOfflineMode) {
-                startLocalSimulation();
-            } else {
-                updateLiveStatus({
-                    status: 'playing',
-                    currentPhase: 1,
-                    score: 0,
-                    elapsedTime: 0
-                });
-            }
-
-            loadPhase(1);
-        };
-
-        // ACTUALIZACIÓN VISUAL DEL REFEJER DE TIEMPO
-        function updateTimerDisplay() {
-            if (!state.startTime) return;
-            const now = performance.now();
-            const rawElapsed = now - state.startTime;
-            state.elapsedTime = rawElapsed + (state.penaltyTime * 1000);
-
-            const totalMs = state.elapsedTime;
-            const minutes = Math.floor(totalMs / 60000);
-            const seconds = Math.floor((totalMs % 60000) / 1000);
-            const centiseconds = Math.floor((totalMs % 1000) / 10);
-
-            const mStr = String(minutes).padStart(2, '0');
-            const sStr = String(seconds).padStart(2, '0');
-            const cStr = String(centiseconds).padStart(2, '0');
-
-            document.getElementById('stat-timer').innerText = `${mStr}:${sStr}.${cStr}`;
-
-            // Actualizar periódicamente en la base de datos (cada 2 segundos)
-            if (!isOfflineMode && Math.floor(totalMs) % 2000 < 50) {
-                updateLiveStatus({
-                    elapsedTime: state.elapsedTime,
-                    score: state.score
-                });
-            }
-        }
-
-        // CARGAR FASES DEL JUEGO
-        function loadPhase(phaseNum) {
-            state.currentPhase = phaseNum;
-            document.getElementById('stat-phase').innerText = `${phaseNum} / 3`;
-            
-            document.getElementById('screen-phase1').classList.add('hidden');
-            document.getElementById('screen-phase2').classList.add('hidden');
-            document.getElementById('screen-phase3').classList.add('hidden');
-            
-            updateLiveStatus({
-                currentPhase: phaseNum
-            });
-
-            if (phaseNum === 1) {
-                document.getElementById('screen-phase1').classList.remove('hidden');
-                updateInspectionProgress();
-            } else if (phaseNum === 2) {
-                document.getElementById('screen-phase2').classList.remove('hidden');
-                loadRoadEvent();
-            } else if (phaseNum === 3) {
-                document.getElementById('screen-phase3').classList.remove('hidden');
-                loadTriviaQuestion();
-            }
-        }
-
-        // FASE 1: EVENTOS DE INSPECCIÓN
-        let activeElementKey = "";
-        window.openInspectionModal = function(elementKey) {
-            if (state.inspectedElements[elementKey]) return; 
-            
-            playSound('click');
-            activeElementKey = elementKey;
-            const data = inspectionDetails[elementKey];
-            
-            document.getElementById('modal-title').innerText = data.title;
-            document.getElementById('modal-question').innerText = data.question;
-            
-            const iconContainer = document.getElementById('modal-icon-container');
-            iconContainer.className = `w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-3 ${data.bgColor}`;
-            iconContainer.innerHTML = `<i class="${data.iconClass}"></i>`;
-            
-            const optionsContainer = document.getElementById('modal-options');
-            optionsContainer.innerHTML = "";
-            
-            data.options.forEach((opt) => {
-                const btn = document.createElement('button');
-                btn.className = "w-full text-left bg-slate-950/45 hover:bg-slate-800 border border-slate-850 hover:border-blue-500 rounded-xl px-4 py-3 text-xs md:text-sm transition-all duration-200";
-                btn.innerText = opt.text;
-                btn.onclick = () => submitInspectionAnswer(opt);
-                optionsContainer.appendChild(btn);
-            });
-            
-            document.getElementById('modal-inspection').classList.remove('hidden');
-        };
-
-        window.closeInspectionModal = function() {
-            document.getElementById('modal-inspection').classList.add('hidden');
-        };
-
-        function submitInspectionAnswer(option) {
-            closeInspectionModal();
-            if (option.correct) {
-                playSound('correct');
-                state.score += option.score;
-                document.getElementById('stat-score').innerText = state.score;
-                state.inspectedElements[activeElementKey] = true;
-                
-                const node = document.getElementById(`node-${activeElementKey}`);
-                node.className = "absolute w-8 h-8 rounded-full bg-emerald-500 border-2 border-white text-white font-bold flex items-center justify-center focus:outline-none transition-all cursor-default";
-                node.innerHTML = `<i class="fa-solid fa-check text-xs"></i>`;
-                node.disabled = true;
-                
-                updateInspectionProgress();
-            } else {
-                playSound('wrong');
-                playSound('penalty');
-                applyTimePenalty(10); // +10 segundos por error en inspección
-                loseLife();
-                showNotification("¡Falla de Inspección!", "Esa omisión compromete el pilar de Vehículos Seguros. +10s de penalización.", "error");
-            }
-        }
-
-        function applyTimePenalty(seconds) {
-            state.penaltyTime += seconds;
-            const timerEl = document.getElementById('stat-timer');
-            timerEl.classList.add('text-rose-500');
-            setTimeout(() => timerEl.classList.remove('text-rose-500'), 800);
-        }
-
-        function updateInspectionProgress() {
-            let total = 5;
-            let checked = 0;
-            for (let key in state.inspectedElements) {
-                if (state.inspectedElements[key]) checked++;
-            }
-            
-            document.getElementById('p1-progress-text').innerText = `${checked} de ${total} revisados`;
-            
-            if (checked === total) {
-                const btnNext = document.getElementById('btn-p1-next');
-                btnNext.disabled = false;
-                btnNext.className = "mt-6 px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 transform hover:-translate-y-0.5 transition-all flex items-center gap-2 cursor-pointer";
-            }
-        }
-
-        window.nextPhase = function() {
-            playSound('click');
-            loadPhase(state.currentPhase + 1);
-        };
-
-        // FASE 2: SIMULADOR DE CONDUCCIÓN
-        function loadRoadEvent() {
-            const currentEvent = roadEvents[state.currentEventIndex];
-            const eventContainer = document.getElementById('road-event-container');
-            
-            document.getElementById('p2-progress-badge').innerText = `Escenario ${state.currentEventIndex + 1} de 3`;
-            document.getElementById('p2-distance').innerText = `Trayecto ${state.currentEventIndex + 1}`;
-            
-            eventContainer.innerHTML = `
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                        <i class="${currentEvent.icon}"></i>
-                    </div>
-                    <div>
-                        <h4 class="header-font font-bold text-[10px] text-amber-400 uppercase tracking-wider">Desafío Vial</h4>
-                        <h5 class="text-xs md:text-sm font-bold text-white">${currentEvent.title}</h5>
-                    </div>
+        <!-- PANTALLA 2: LOBBY DE ESPERA / PREPARACIÓN -->
+        <div id="screen-lobby" class="hidden flex flex-col justify-between h-full py-4">
+          <div class="text-center">
+            <span class="bg-blue-500/10 text-blue-400 text-xs px-3 py-1 rounded-full border border-blue-500/20 font-semibold uppercase tracking-wider">Sala de Competencia Activa</span>
+            <h2 class="text-3xl font-extrabold text-white mt-3 mb-1" id="lobby-welcome-title">Bienvenido, Conductor</h2>
+            <p class="text-slate-400 text-sm max-w-lg mx-auto">
+              Te encuentras en la sala de espera. En el panel de la derecha puedes observar a los rivales que están listos para la carrera vial.
+            </p>
+          </div>
+
+          <div class="my-8 flex justify-center items-center">
+            <div class="glass p-6 rounded-2xl border border-slate-800 text-center max-w-sm w-full relative">
+              <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-slate-950 text-[10px] font-bold uppercase tracking-widest px-3 py-0.5 rounded-full">
+                Instrucciones Clave
+              </div>
+              <ul class="text-left text-xs text-slate-300 space-y-3 mt-2">
+                <li class="flex items-start gap-2.5">
+                  <i class="fa-solid fa-gauge text-blue-400 mt-0.5"></i>
+                  <span><strong>Tiempo Neto:</strong> El cronómetro no se detiene. ¡Sé lo más ágil posible!</span>
+                </li>
+                <li class="flex items-start gap-2.5">
+                  <i class="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5"></i>
+                  <span><strong>Penalizaciones:</strong> Responder de forma incorrecta añadirá automáticamente <strong>+10 segundos</strong> a tu marca final.</span>
+                </li>
+                <li class="flex items-start gap-2.5">
+                  <i class="fa-solid fa-heart-crack text-red-500 mt-0.5"></i>
+                  <span><strong>Vidas Viales:</strong> Tienes 3 vidas. Si las pierdes, serás descalificado de la carrera.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="flex flex-col items-center gap-3">
+            <button onclick="startGame()" class="w-full max-w-sm bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-extrabold py-4 px-8 rounded-xl shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/45 transition-all transform active:scale-95 flex items-center justify-center gap-3 text-lg tracking-wide">
+              ¡INICIAR MI CARRERA AHORA! <i class="fa-solid fa-play"></i>
+            </button>
+            <p class="text-xs text-slate-500">Al presionar, arrancará tu cronómetro individual de competencia.</p>
+          </div>
+        </div>
+
+        <!-- PANTALLA 3: MÓDULO 1 - INSPECCIÓN PREOPERACIONAL INTERACTIVA -->
+        <div id="screen-mod1" class="hidden flex flex-col justify-between h-full py-2">
+          <div>
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+              <div>
+                <span class="text-amber-500 text-[10px] uppercase font-bold tracking-widest">Fase 1 de 3</span>
+                <h3 class="text-lg font-bold text-white">Inspección Preoperacional Interactiva</h3>
+              </div>
+              <span class="bg-blue-500/15 text-blue-400 text-xs px-2.5 py-1 rounded-md font-medium border border-blue-500/25">Vehículos Seguros</span>
+            </div>
+            <p class="text-slate-300 text-xs mb-4">
+              Haz clic en los 5 componentes críticos del vehículo para verificar que cumplan con los estándares técnicos y responder correctamente las preguntas del preoperacional.
+            </p>
+          </div>
+
+          <!-- Contenedor del Vehículo Interactivo -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+            <!-- Representación Visual de un Carro en 2D Vectorial -->
+            <div class="relative bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex justify-center items-center h-56">
+              <!-- Chasis Base SVG -->
+              <svg viewBox="0 0 400 180" class="w-full max-w-xs h-auto opacity-70">
+                <path d="M50,110 L90,60 L280,60 L340,110 L360,110 L360,150 L50,150 Z" fill="#1e293b" stroke="#475569" stroke-width="3"/>
+                <!-- Ventanas -->
+                <path d="M120,70 L190,70 L190,105 L105,105 Z" fill="#38bdf8" opacity="0.3"/>
+                <path d="M200,70 L270,70 L300,105 L200,105 Z" fill="#38bdf8" opacity="0.3"/>
+                <!-- Ruedas -->
+                <circle cx="100" cy="145" r="28" fill="#0f172a" stroke="#64748b" stroke-width="4"/>
+                <circle cx="290" cy="145" r="28" fill="#0f172a" stroke="#64748b" stroke-width="4"/>
+                <!-- Luces -->
+                <path d="M355,115 L360,115 L360,125 L355,125 Z" fill="#fef08a"/>
+                <path d="M50,115 L45,115 L45,125 L50,125 Z" fill="#ef4444"/>
+              </svg>
+
+              <!-- Botones Interactivos colocados sobre componentes -->
+              <!-- Luces -->
+              <button onclick="inspectPart('lights')" id="btn-part-lights" class="absolute top-[80px] right-[40px] w-8 h-8 rounded-full bg-amber-500 text-slate-900 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg shadow-amber-500/50">
+                <i class="fa-solid fa-lightbulb text-sm"></i>
+              </button>
+              <!-- Llantas -->
+              <button onclick="inspectPart('tyres')" id="btn-part-tyres" class="absolute bottom-[20px] left-[110px] w-8 h-8 rounded-full bg-amber-500 text-slate-900 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg shadow-amber-500/50">
+                <i class="fa-solid fa-circle-notch text-sm"></i>
+              </button>
+              <!-- Frenos -->
+              <button onclick="inspectPart('brakes')" id="btn-part-brakes" class="absolute bottom-[20px] right-[120px] w-8 h-8 rounded-full bg-amber-500 text-slate-900 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg shadow-amber-500/50">
+                <i class="fa-solid fa-gauge-simple-high text-sm"></i>
+              </button>
+              <!-- Cinturón de Seguridad -->
+              <button onclick="inspectPart('belt')" id="btn-part-belt" class="absolute top-[80px] left-[180px] w-8 h-8 rounded-full bg-amber-500 text-slate-900 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg shadow-amber-500/50">
+                <i class="fa-solid fa-shield-heart text-sm"></i>
+              </button>
+              <!-- Kit de Carreteras -->
+              <button onclick="inspectPart('kit')" id="btn-part-kit" class="absolute top-[100px] left-[60px] w-8 h-8 rounded-full bg-amber-500 text-slate-900 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg shadow-amber-500/50">
+                <i class="fa-solid fa-kit-medical text-sm"></i>
+              </button>
+            </div>
+
+            <!-- Panel de Pregunta de la Inspección Activa -->
+            <div class="glass p-5 rounded-2xl border border-slate-800/80 min-h-[220px] flex flex-col justify-between">
+              <div id="inspection-question-box">
+                <div class="text-xs font-bold text-blue-400 mb-1" id="inspection-part-title">Inspección de Seguridad</div>
+                <h4 class="text-sm font-semibold text-white mb-3" id="inspection-question-text">Selecciona un punto naranja del vehículo de la izquierda para comenzar el análisis preoperacional.</h4>
+                <div class="space-y-2" id="inspection-options-container">
+                  <!-- Opciones dinámicas -->
                 </div>
-                <p class="text-[11px] md:text-xs text-slate-300 leading-relaxed mb-4">${currentEvent.desc}</p>
-                <div class="space-y-2" id="road-choices-area"></div>
-            `;
-            
-            const choicesArea = document.getElementById('road-choices-area');
-            currentEvent.choices.forEach((choice) => {
-                const btn = document.createElement('button');
-                btn.className = "w-full text-left bg-slate-950/60 hover:bg-slate-800 border border-slate-850 hover:border-amber-500/50 rounded-xl p-3 text-[11px] md:text-xs text-slate-200 transition-all duration-200";
-                btn.innerText = choice.text;
-                btn.onclick = () => submitRoadChoice(choice);
-                choicesArea.appendChild(btn);
-            });
-        }
+              </div>
+              <div id="inspection-progress-text" class="text-[11px] text-slate-400 text-right mt-3">
+                Verificados: 0 de 5 componentes.
+              </div>
+            </div>
+          </div>
 
-        function submitRoadChoice(choice) {
-            const eventContainer = document.getElementById('road-event-container');
-            const choicesArea = document.getElementById('road-choices-area');
-            choicesArea.style.pointerEvents = "none";
-            
-            if (choice.correct) {
-                playSound('correct');
-                state.score += choice.pts;
-                document.getElementById('stat-score').innerText = state.score;
-                
-                eventContainer.className = "bg-slate-900/95 border-2 border-emerald-500 rounded-2xl p-4 shadow-2xl z-10 max-w-md mx-auto scale-100 transition-all duration-300";
-                eventContainer.innerHTML = `
-                    <div class="text-center py-2">
-                        <i class="fa-solid fa-circle-check text-emerald-500 text-4xl mb-2 animate-bounce"></i>
-                        <h4 class="header-font font-bold text-base text-emerald-400">Excelente Decisión</h4>
-                        <p class="text-[10px] text-slate-300 mt-2 max-w-xs mx-auto leading-relaxed">${choice.feedback}</p>
-                        <button onclick="advanceRoadEvent()" class="mt-4 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-[10px] tracking-wider uppercase transition-all">Continuar Ruta</button>
-                    </div>
-                `;
-            } else {
-                playSound('wrong');
-                playSound('penalty');
-                applyTimePenalty(10); // +10s por mala decisión en ruta
-                loseLife();
-                
-                eventContainer.className = "bg-slate-900/95 border-2 border-rose-500 rounded-2xl p-4 shadow-2xl z-10 max-w-md mx-auto scale-100 transition-all duration-300";
-                eventContainer.innerHTML = `
-                    <div class="text-center py-2">
-                        <i class="fa-solid fa-triangle-exclamation text-rose-500 text-4xl mb-2"></i>
-                        <h4 class="header-font font-bold text-base text-rose-400">Decisión Insegura</h4>
-                        <p class="text-[10px] text-slate-300 mt-1 max-w-xs mx-auto leading-relaxed">${choice.feedback}</p>
-                        <button onclick="advanceRoadEvent()" class="mt-4 px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg text-[10px] tracking-wider uppercase transition-all">Avanzar</button>
-                    </div>
-                `;
-            }
-        }
+          <!-- Footer Módulo 1 -->
+          <div class="flex justify-end mt-4 border-t border-slate-800 pt-3">
+            <button id="btn-next-mod1" disabled onclick="goToModule2()" class="bg-slate-800 text-slate-500 cursor-not-allowed font-bold py-2 px-6 rounded-lg text-sm flex items-center gap-2 transition-all">
+              Siguiente Fase <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
 
-        window.advanceRoadEvent = function() {
-            const badge = document.getElementById(`badge-event-${state.currentEventIndex}`);
-            if (badge) {
-                badge.className = "flex-1 py-2 text-center rounded-lg bg-slate-900 text-blue-400 text-[9px] font-bold uppercase border border-blue-900/40";
-            }
-            
-            state.currentEventIndex++;
-            const eventContainer = document.getElementById('road-event-container');
-            eventContainer.className = "bg-slate-900/95 border border-slate-800 rounded-2xl p-4 shadow-2xl z-10 max-w-md mx-auto transform transition-all duration-300";
+        <!-- PANTALLA 4: MÓDULO 2 - SIMULACIÓN DE ESCENARIOS EN LA VÍA -->
+        <div id="screen-mod2" class="hidden flex flex-col justify-between h-full py-2">
+          <div>
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+              <div>
+                <span class="text-amber-500 text-[10px] uppercase font-bold tracking-widest">Fase 2 de 3</span>
+                <h3 class="text-lg font-bold text-white">Comportamiento Humano y Emergencias</h3>
+              </div>
+              <span class="bg-amber-500/15 text-amber-400 text-xs px-2.5 py-1 rounded-md font-medium border border-amber-500/25">Toma de Decisiones</span>
+            </div>
+            <p class="text-slate-300 text-xs mb-4">
+              Se te presentarán decisiones críticas en la vía que todo colaborador de PAR Servicios debe resolver basándose en las políticas internas y el protocolo PAS.
+            </p>
+          </div>
 
-            if (state.currentEventIndex < roadEvents.length && state.lives > 0) {
-                loadRoadEvent();
-            } else {
-                if (state.lives > 0) {
-                    playSound('win');
-                    loadPhase(3);
-                }
+          <!-- Tarjeta de Escenario -->
+          <div class="glass p-5 rounded-2xl border border-slate-800 flex flex-col justify-between min-h-[280px]">
+            <div>
+              <div class="flex items-center gap-2 text-amber-500 mb-2">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span class="text-xs uppercase font-extrabold tracking-wider" id="scenario-badge">Situación Alerta</span>
+              </div>
+              <h4 class="text-base font-bold text-white mb-4" id="scenario-title">Cargando escenario...</h4>
+              <p class="text-xs text-slate-300 mb-6 leading-relaxed" id="scenario-desc">Descripción...</p>
+            </div>
+
+            <!-- Opciones del Escenario -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="scenario-options">
+              <!-- Opciones dinámicas -->
+            </div>
+          </div>
+
+          <!-- Footer Módulo 2 -->
+          <div class="flex justify-between items-center mt-4 border-t border-slate-800 pt-3">
+            <span class="text-[11px] text-slate-400" id="scenario-progress-text">Caso 1 de 3</span>
+            <button id="btn-next-mod2" disabled onclick="goToModule3()" class="bg-slate-800 text-slate-500 cursor-not-allowed font-bold py-2 px-6 rounded-lg text-sm flex items-center gap-2 transition-all">
+              Ir a la Trivia Final <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- PANTALLA 5: MÓDULO 3 - EL GRAN TEST DEL PESV (Resolución 40595) -->
+        <div id="screen-mod3" class="hidden flex flex-col justify-between h-full py-2">
+          <div>
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+              <div>
+                <span class="text-amber-500 text-[10px] uppercase font-bold tracking-widest">Fase 3 de 3</span>
+                <h3 class="text-lg font-bold text-white">Trivia Oficial de la Resolución 40595 de 2022</h3>
+              </div>
+              <span class="bg-red-500/15 text-red-400 text-xs px-2.5 py-1 rounded-md font-medium border border-red-500/25">Consolidación</span>
+            </div>
+            <p class="text-slate-300 text-xs mb-4">
+              Responde las preguntas teóricas clave recopiladas directamente de las directrices viales para asegurar la validación de la capacitación grupal.
+            </p>
+          </div>
+
+          <!-- Tarjeta de Pregunta -->
+          <div class="glass p-5 rounded-2xl border border-slate-800 flex flex-col justify-between min-h-[280px]">
+            <div>
+              <div class="text-xs font-bold text-indigo-400 mb-1" id="trivia-pilar">Pilar PESV</div>
+              <h4 class="text-base font-bold text-white mb-4 leading-snug" id="trivia-question">Pregunta...</h4>
+            </div>
+
+            <!-- Opciones de Selección Múltiple -->
+            <div class="space-y-2.5" id="trivia-options">
+              <!-- Opciones dinámicas -->
+            </div>
+          </div>
+
+          <!-- Footer Módulo 3 -->
+          <div class="flex justify-between items-center mt-4 border-t border-slate-800 pt-3">
+            <span class="text-[11px] text-slate-400" id="trivia-progress-text">Pregunta 1 de 4</span>
+            <button id="btn-finish-game" disabled onclick="finishGame()" class="bg-slate-800 text-slate-500 cursor-not-allowed font-bold py-2 px-6 rounded-lg text-sm flex items-center gap-2 transition-all">
+              Terminar y Guardar <i class="fa-solid fa-flag-checkered"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- PANTALLA 6: EVALUACIÓN DE DESEMPEÑO Y CERTIFICADO -->
+        <div id="screen-result" class="hidden flex flex-col justify-between h-full py-2 overflow-y-auto max-h-[550px] pr-2">
+          <div class="text-center">
+            <div class="w-16 h-16 bg-emerald-500 text-slate-950 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg shadow-emerald-500/20">
+              <i class="fa-solid fa-trophy"></i>
+            </div>
+            <h2 class="text-2xl font-extrabold text-white">¡Ruta Completada Exitosamente!</h2>
+            <p class="text-slate-400 text-xs mt-1">Has finalizado la capacitación lúdica del PESV de PAR Servicios.</p>
+          </div>
+
+          <!-- Estado de Sincronización en la Nube -->
+          <div id="sheets-sync-status" class="my-3 mx-auto max-w-md w-full glass p-3 rounded-xl border border-slate-800 text-xs flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500" id="sync-dot"></span>
+              </span>
+              <span class="text-slate-300 font-medium" id="sync-text">Sincronizando tiempos con la central...</span>
+            </div>
+            <i class="fa-solid fa-database text-slate-500 text-sm" id="sync-icon"></i>
+          </div>
+
+          <!-- Resultados Detallados de Desempeño -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 my-4">
+            <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 text-center">
+              <span class="text-[10px] uppercase text-slate-400 block mb-0.5">Vidas Restantes</span>
+              <span class="text-lg font-extrabold text-red-500" id="result-lives">3/3</span>
+            </div>
+            <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 text-center">
+              <span class="text-[10px] uppercase text-slate-400 block mb-0.5">Respuestas Ok</span>
+              <span class="text-lg font-extrabold text-emerald-400" id="result-score">10/10</span>
+            </div>
+            <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 text-center">
+              <span class="text-[10px] uppercase text-slate-400 block mb-0.5">Penalizaciones</span>
+              <span class="text-lg font-extrabold text-amber-500" id="result-penalties">0s</span>
+            </div>
+            <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 text-center">
+              <span class="text-[10px] uppercase text-slate-400 block mb-0.5">Tiempo Final</span>
+              <span class="text-lg font-extrabold text-blue-400 font-mono" id="result-time">00:00.00</span>
+            </div>
+          </div>
+
+          <!-- Canvas para Certificado Generado -->
+          <div class="flex flex-col items-center my-4">
+            <canvas id="certificate-canvas" width="600" height="400" class="max-w-full h-auto rounded-xl border border-slate-800 bg-slate-950 shadow-xl"></canvas>
+            <p class="text-[10px] text-slate-500 mt-2"><i class="fa-solid fa-circle-info"></i> El certificado se genera dinámicamente con tu nombre y el tiempo oficial de competencia.</p>
+          </div>
+
+          <!-- Botones de Acción -->
+          <div class="flex flex-col sm:flex-row gap-3 justify-center items-center mt-3 border-t border-slate-800 pt-3">
+            <button onclick="downloadCertificate()" class="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-2.5 px-6 rounded-lg text-sm flex items-center justify-center gap-2 shadow-lg transition-all">
+              <i class="fa-solid fa-download"></i> Descargar Certificado
+            </button>
+            <button onclick="restartGame()" class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold py-2.5 px-6 rounded-lg text-sm flex items-center justify-center gap-2 border border-slate-800 transition-all">
+              <i class="fa-solid fa-arrow-rotate-right"></i> Volver a Competir
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- BARRA DE CLASIFICACIÓN EN VIVO (1/4 del ancho, visible para dar competencia grupal) -->
+      <div class="glass rounded-3xl p-5 border border-slate-800/80 flex flex-col justify-between h-full min-h-[580px]">
+        <div>
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+            <h3 class="text-xs uppercase font-extrabold tracking-wider text-slate-300">Clasificación en Vivo</h3>
+          </div>
+          <div class="p-2 bg-slate-950/60 rounded-xl border border-slate-800 text-center mb-4">
+            <span class="text-[10px] text-slate-400 uppercase tracking-widest block">Código de Sala</span>
+            <span class="text-lg font-black text-amber-400 tracking-wider uppercase" id="panel-room-code">SALA_PESV</span>
+          </div>
+          
+          <!-- Lista de Competidores -->
+          <div class="space-y-2.5 overflow-y-auto max-h-[380px] pr-1" id="leaderboard-list">
+            <!-- Cargando estado inicial -->
+            <div class="text-center py-8 text-slate-500 text-xs">
+              <i class="fa-solid fa-spinner animate-spin mb-2 text-lg block"></i>
+              Esperando registro de conductor...
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-800 text-center">
+          <p class="text-[10px] text-slate-500 leading-relaxed">
+            Basado en la Guía de Capacitación Nivel Básico de PAR Servicios de acuerdo a la Resolución 40595 de 2022.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- PIE DE PÁGINA -->
+  <footer class="w-full py-4 text-center text-xs text-slate-500 border-t border-slate-900 glass mt-8">
+    <div class="max-w-7xl mx-auto px-6 flex flex-wrap justify-between items-center gap-4">
+      <p>&copy; 2026 PAR Servicios de Ingeniería S.A.S. - Sistema de Gestión de Seguridad Vial</p>
+      <div class="flex gap-4">
+        <span class="flex items-center gap-1"><i class="fa-solid fa-user-shield text-blue-500"></i> SST Corporativo</span>
+        <span class="flex items-center gap-1"><i class="fa-solid fa-circle-check text-emerald-500"></i> Resolución 40595</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- LÓGICA DEL MOTOR DE JUEGO (JAVASCRIPT) -->
+  <script>
+    // Enlace de Google Apps Script suministrado por el usuario
+    const GOOGLE_SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbx5Kzj6pdjLOg4SCUFUOnZDj9dlS5iuZNUO_cSxLztzGZ_7FRxf4lgQXZId1rCHpWaupQ/exec";
+
+    // Estado del Jugador Activo
+    let player = {
+      name: "",
+      room: "",
+      score: 0,
+      lives: 3,
+      timeElapsed: 0, // Segundos netos
+      penalties: 0,   // Segundos de penalización
+      currentStage: "Lobby", // 'Lobby', 'Mod1', 'Mod2', 'Mod3', 'Finished'
+      isFinished: false
+    };
+
+    // Competidores Virtuales de Simulación para simular el multijugador grupal en tiempo real
+    let competitors = [
+      { name: "Ing. Alejandro Pérez", stage: "Lobby", time: 0, penalties: 0, score: 0, isFinished: false, speedFactor: 1.1 },
+      { name: "Elena Gómez (SST)", stage: "Lobby", time: 0, penalties: 0, score: 0, isFinished: false, speedFactor: 0.95 },
+      { name: "Soporte Técnico PAR", stage: "Lobby", time: 0, penalties: 0, score: 0, isFinished: false, speedFactor: 1.3 }
+    ];
+
+    // Variables de control de intervalos
+    let timerInterval = null;
+    let syncInterval = null;
+    let competitorSimulationInterval = null;
+
+    // BANCO DE PREGUNTAS Y COMPONENTES VIALES
+    const INSPECTION_PARTS = {
+      lights: {
+        title: "Luces y Elementos Ópticos",
+        question: "¿Cuál es el parámetro mínimo a validar en las luces de servicio durante el preoperacional?",
+        options: [
+          { text: "Que estén limpias y enciendan en su totalidad para garantizar visibilidad óptima.", correct: true },
+          { text: "Solo importa que encienda la luz direccional izquierda.", correct: false },
+          { text: "Que las bombillas sean de luz de color azul neón.", correct: false }
+        ]
+      },
+      tyres: {
+        title: "Llantas y Banda de Rodamiento",
+        question: "De acuerdo a la Resolución 40595 de 2022, ¿cuál es el labrado mínimo permitido para llantas de vehículos livianos?",
+        options: [
+          { text: "1.6 mm de profundidad en el área de mayor desgaste.", correct: true },
+          { text: "0.5 mm, con que no se vea el alambre de la banda interna.", correct: false },
+          { text: "3.5 mm en cualquier tipo de carretera y terreno seco.", correct: false }
+        ]
+      },
+      brakes: {
+        title: "Sistema de Frenos de Servicio",
+        question: "¿Qué verificación clave del sistema de frenos se debe realizar antes de iniciar marcha?",
+        options: [
+          { text: "Nivel de líquido de frenos y tensión correcta del pedal sin vacíos.", correct: true },
+          { text: "Que el freno de mano se pueda activar con un solo dedo.", correct: false },
+          { text: "Verificar la marca comercial de las pastillas instaladas.", correct: false }
+        ]
+      },
+      belt: {
+        title: "Cinturones de Seguridad",
+        question: "¿Qué elemento es fundamental examinar sobre los cinturones en la cabina?",
+        options: [
+          { text: "Que el anclaje bloquee firmemente ante un tirón súbito y la cinta no esté deshilachada.", correct: true },
+          { text: "Que el color del cinturón combine con la tapicería interna.", correct: false },
+          { text: "Que el sensor electrónico suene de forma continua e ininterrumpida.", correct: false }
+        ]
+      },
+      kit: {
+        title: "Kit de Carreteras y Prevención",
+        question: "¿Cuál de los siguientes no es un elemento reglamentario dentro del kit de carreteras?",
+        options: [
+          { text: "Un cargador inalámbrico de alta velocidad para dispositivos.", correct: true },
+          { text: "Dos señales de carretera con soportes (triángulos refractivos).", correct: false },
+          { text: "Extintor de incendios con carga vigente de acuerdo al cilindraje.", correct: false }
+        ]
+      }
+    };
+
+    let inspectedPartsCount = 0;
+    let inspectedPartsKeys = { lights: false, tyres: false, brakes: false, belt: false, kit: false };
+
+    // Banco de Escenarios Viales (Módulo 2)
+    const SCENARIOS = [
+      {
+        title: "Llamada urgente de la operación",
+        desc: "Te encuentras conduciendo hacia un servicio técnico de PAR y suena tu celular. Te llama el Director de Proyecto de forma urgente. ¿Qué debes hacer según las directrices?",
+        options: [
+          { text: "Contestar usando manos libres o Bluetooth para no desviar la mirada.", correct: false, feedback: "Incorrecto. PAR Servicios prohíbe el uso de celulares durante la conducción, incluso con manos libres." },
+          { text: "Ignorar la llamada, buscar un lugar seguro autorizado para parquear, detener el vehículo y retornar la llamada.", correct: true, feedback: "¡Correcto! Primero la vida, la política de no uso de celular al conducir se cumple estrictamente." }
+        ]
+      },
+      {
+        title: "Accidente de tránsito en la ruta",
+        desc: "Eres el primer testigo de un accidente vial donde hay un motociclista herido leve en la berma. ¿Cuál es la forma correcta de activar el protocolo de emergencia PAS?",
+        options: [
+          { text: "PROTEGER la zona asegurando tu vehículo, AVISAR a emergencias (123) indicando lugar exacto y SOCORRER al herido sin moverlo de forma brusca.", correct: true, feedback: "¡Excelente! Has aplicado correctamente el protocolo PAS (Proteger, Avisar, Socorrer)." },
+          { text: "SOCORRER de inmediato subiendo al herido a tu vehículo para trasladarlo rápidamente antes de llamar al 123.", correct: false, feedback: "Incorrecto. Podrías empeorar lesiones graves. Siempre se debe proteger y avisar primero." }
+        ]
+      },
+      {
+        title: "Vehículo de transporte prohibido",
+        desc: "Se te solicita transportar herramientas y repuestos pesados. Un compañero te ofrece llevarlos en una motocicleta. ¿Esta práctica está permitida por PAR Servicios?",
+        options: [
+          { text: "Sí, siempre que las herramientas queden bien amarradas a la parrilla trasera.", correct: false, feedback: "Incorrecto. Está estrictamente prohibido transportar cargas pesadas o voluminosas en motos." },
+          { text: "No, el transporte de este tipo de carga debe realizarse en vehículos utilitarios autorizados y adaptados para carga.", correct: true, feedback: "¡Correcto! Cumple con las políticas de transporte de carga segura del PESV." }
+        ]
+      }
+    ];
+    let currentScenarioIdx = 0;
+
+    // Banco de Trivia Teórica (Módulo 3)
+    const TRIVIA_QUESTIONS = [
+      {
+        pilar: "Pilares del PESV - Gestión Institucional",
+        q: "¿Cuál es el principal marco normativo vigente en Colombia que adopta la metodología para el diseño y ejecución del PESV?",
+        options: [
+          { text: "Resolución 40595 de 2022", correct: true },
+          { text: "Ley 769 de 2002 (Código Nacional de Tránsito)", correct: false },
+          { text: "Resolución 1565 de 2014", correct: false }
+        ]
+      },
+      {
+        pilar: "Comportamiento Humano - Hábitos Seguros",
+        q: "Al conducir bajo condiciones climáticas adversas (como lluvia densa en carretera), ¿cómo se debe ajustar la distancia de seguridad con el vehículo de adelante?",
+        options: [
+          { text: "Duplicar la distancia de seguridad recomendada para compensar la pérdida de fricción.", correct: true },
+          { text: "Mantener exactamente la misma distancia, confiando en el sistema de frenado ABS.", correct: false },
+          { text: "Aumentar la velocidad para salir rápidamente de la zona de lluvia.", correct: false }
+        ]
+      },
+      {
+        pilar: "Entorno Seguro - Reportes a SST",
+        q: "Si identificas un factor de riesgo en la vía habitual de operación o una falla técnica reiterativa en la flota, ¿cuál es el canal de reporte oficial según la presentación de PAR?",
+        options: [
+          { text: "Reportar de inmediato a SST a través del link de formulario oficial de Microsoft Forms.", correct: true },
+          { text: "Esperar a la reunión trimestral de operaciones para exponer el caso de manera verbal.", correct: false },
+          { text: "Comentarlo únicamente con tus compañeros de ruta por chat grupal informal.", correct: false }
+        ]
+      },
+      {
+        pilar: "Gestión Institucional - Compromiso Vial",
+        q: "¿De quién es la responsabilidad de firmar y dar cumplimiento al Acta de Compromiso de Seguridad Vial en PAR Servicios?",
+        options: [
+          { text: "De todos los colaboradores, directores, operarios y conductores de la organización.", correct: true },
+          { text: "Únicamente de los conductores contratados de forma externa.", correct: false },
+          { text: "Exclusivamente del personal asignado al departamento de Salud Ocupacional.", correct: false }
+        ]
+      }
+    ];
+    let currentTriviaIdx = 0;
+
+    // INICIAR REGISTRO DE USUARIO
+    function startRegistration() {
+      playSound('click');
+      const nameInput = document.getElementById('input-name').value.trim();
+      const roomInput = document.getElementById('input-room').value.trim().toUpperCase();
+      
+      if (!nameInput || !roomInput) return;
+
+      player.name = nameInput;
+      player.room = roomInput;
+      
+      // Actualizar interfaz
+      document.getElementById('lobby-welcome-title').innerText = `Bienvenido, ${player.name}`;
+      document.getElementById('panel-room-code').innerText = player.room;
+      
+      // Cambiar de pantalla
+      document.getElementById('screen-register').classList.add('hidden');
+      document.getElementById('screen-lobby').classList.remove('hidden');
+      
+      // Actualizar Tabla de Clasificación Inicial
+      updateLeaderboardUI();
+      
+      // Iniciar competidores simulados
+      startCompetitorSimulation();
+    }
+
+    // SIMULACIÓN DE COMPETENCIA GRUPAL (IA)
+    function startCompetitorSimulation() {
+      competitors.forEach(comp => {
+        comp.stage = "Lobby";
+        comp.time = 0;
+        comp.penalties = 0;
+        comp.score = 0;
+        comp.isFinished = false;
+      });
+
+      if (competorSimulationInterval) clearInterval(competorSimulationInterval);
+
+      // Simulación del avance de los rivales cada 3 segundos
+      competorSimulationInterval = setInterval(() => {
+        competitors.forEach(comp => {
+          if (comp.isFinished) return;
+
+          // Añadir tiempo e incrementos viales simulados
+          comp.time += Math.round((Math.random() * 3 + 2) * comp.speedFactor);
+          
+          if (comp.stage === "Lobby") {
+            // El competidor decide arrancar a los pocos segundos
+            if (Math.random() > 0.4) {
+              comp.stage = "Fase 1 (Preoperacional)";
             }
+          } else if (comp.stage === "Fase 1 (Preoperacional)") {
+            comp.score += Math.random() > 0.85 ? 1 : 0; // Posible acierto
+            if (comp.time > 40) comp.stage = "Fase 2 (Escenarios)";
+          } else if (comp.stage === "Fase 2 (Escenarios)") {
+            if (Math.random() > 0.9) {
+              comp.penalties += 10; // Penalización por error simulada
+            }
+            if (comp.time > 85) comp.stage = "Fase 3 (Trivia Final)";
+          } else if (comp.stage === "Fase 3 (Trivia Final)") {
+            if (comp.time > 130) {
+              comp.stage = "Terminado";
+              comp.isFinished = true;
+            }
+          }
+        });
+        
+        updateLeaderboardUI();
+      }, 3000);
+    }
+
+    // INICIAR JUEGO (CRONÓMETRO CORRIENDO)
+    function startGame() {
+      playSound('victory');
+      player.currentStage = "Mod1";
+      
+      document.getElementById('screen-lobby').classList.add('hidden');
+      document.getElementById('screen-mod1').classList.remove('hidden');
+      document.getElementById('game-stats-header').classList.remove('hidden');
+
+      // Inicializar Cronómetro a alta precisión
+      const startTime = Date.now();
+      timerInterval = setInterval(() => {
+        const diff = Date.now() - startTime;
+        player.timeElapsed = diff / 1000;
+        updateTimerDisplay();
+      }, 30); // 30ms para centésimas fluidas
+
+      // Reiniciar variables preoperacional
+      inspectedPartsCount = 0;
+      inspectedPartsKeys = { lights: false, tyres: false, brakes: false, belt: false, kit: false };
+      resetInspectionUI();
+    }
+
+    // ACTUALIZAR RELOJ EN TIEMPO REAL
+    function updateTimerDisplay() {
+      const display = document.getElementById('time-display');
+      
+      const totalSeconds = player.timeElapsed + player.penalties;
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = Math.floor(totalSeconds % 60);
+      const centiseconds = Math.floor((totalSeconds % 1) * 100);
+
+      const strMin = minutes.toString().padStart(2, '0');
+      const strSec = seconds.toString().padStart(2, '0');
+      const strCen = centiseconds.toString().padStart(2, '0');
+
+      display.innerText = `${strMin}:${strSec}.${strCen}`;
+    }
+
+    // REINICIAR INTERFAZ MÓDULO 1
+    function resetInspectionUI() {
+      const parts = ['lights', 'tyres', 'brakes', 'belt', 'kit'];
+      parts.forEach(part => {
+        const btn = document.getElementById(`btn-part-${part}`);
+        btn.className = "absolute w-8 h-8 rounded-full bg-amber-500 text-slate-900 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg shadow-amber-500/50";
+      });
+      document.getElementById('inspection-question-text').innerText = "Selecciona un punto del vehículo para comenzar el análisis preoperacional.";
+      document.getElementById('inspection-options-container').innerHTML = "";
+      document.getElementById('inspection-progress-text').innerText = "Verificados: 0 de 5 componentes.";
+      document.getElementById('btn-next-mod1').disabled = true;
+      document.getElementById('btn-next-mod1').className = "bg-slate-800 text-slate-500 cursor-not-allowed font-bold py-2 px-6 rounded-lg text-sm flex items-center gap-2 transition-all";
+    }
+
+    // HACER CLIC EN UN COMPONENTE DEL CARRO
+    function inspectPart(partKey) {
+      playSound('click');
+      const part = INSPECTION_PARTS[partKey];
+      document.getElementById('inspection-part-title').innerText = `Inspección de: ${part.title}`;
+      document.getElementById('inspection-question-text').innerText = part.question;
+
+      const container = document.getElementById('inspection-options-container');
+      container.innerHTML = "";
+
+      part.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-3 text-xs bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-800 transition-all active:scale-[0.98] flex items-center gap-2.5";
+        btn.innerHTML = `<span class="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-[10px] text-slate-400">${idx+1}</span> ${opt.text}`;
+        
+        btn.onclick = () => {
+          evaluateInspectionAnswer(partKey, opt.correct, btn);
         };
+        container.appendChild(btn);
+      });
+    }
 
-        // FASE 3: EVALUACIÓN DIRECTA DE LA RESOLUCIÓN 40595
-        function loadTriviaQuestion() {
-            const currentQ = triviaQuestions[state.currentTriviaIndex];
-            
-            document.getElementById('trivia-current-num').innerText = `Pregunta ${state.currentTriviaIndex + 1} de 5`;
-            const progressPercent = ((state.currentTriviaIndex + 1) / 5) * 100;
-            document.getElementById('trivia-progress-bar').style.width = `${progressPercent}%`;
-            
-            document.getElementById('trivia-question').innerText = currentQ.q;
-            
-            const optionsArea = document.getElementById('trivia-options');
-            optionsArea.innerHTML = "";
-            
-            currentQ.options.forEach((opt, index) => {
-                const btn = document.createElement('button');
-                btn.className = "w-full text-left bg-slate-900 hover:bg-slate-850 border border-slate-800/80 hover:border-blue-500 rounded-xl p-3 text-xs font-semibold transition-all duration-200 flex items-start gap-3";
-                
-                const letter = String.fromCharCode(65 + index);
-                btn.innerHTML = `
-                    <span class="w-5 h-5 rounded-lg bg-blue-950 text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0">${letter}</span>
-                    <span class="text-slate-200 mt-0.5">${opt.text}</span>
-                `;
-                btn.onclick = () => submitTriviaAnswer(opt);
-                optionsArea.appendChild(btn);
-            });
+    // EVALUAR RESPUESTA DEL PREOPERACIONAL
+    function evaluateInspectionAnswer(partKey, isCorrect, elementBtn) {
+      // Bloquear otros botones en este contenedor para evitar doble respuesta
+      const container = document.getElementById('inspection-options-container');
+      const buttons = container.querySelectorAll('button');
+      buttons.forEach(b => b.disabled = true);
+
+      const targetBtn = document.getElementById(`btn-part-${partKey}`);
+
+      if (isCorrect) {
+        playSound('correct');
+        elementBtn.classList.add('border-emerald-500', 'bg-emerald-500/10', 'text-emerald-200');
+        targetBtn.className = "absolute w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center transition-all shadow-lg shadow-emerald-500/50";
+        player.score++;
+      } else {
+        playSound('error');
+        elementBtn.classList.add('border-red-500', 'bg-red-500/10', 'text-red-200');
+        targetBtn.className = "absolute w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center transition-all shadow-lg shadow-red-500/50";
+        applyPenalty(10);
+        loseLife();
+      }
+
+      // Registrar componente inspeccionado
+      if (!inspectedPartsKeys[partKey]) {
+        inspectedPartsKeys[partKey] = true;
+        inspectedPartsCount++;
+      }
+
+      document.getElementById('inspection-progress-text').innerText = `Verificados: ${inspectedPartsCount} de 5 componentes.`;
+
+      // Habilitar botón de avanzar si terminaron las 5 inspecciones
+      if (inspectedPartsCount >= 5) {
+        const nextBtn = document.getElementById('btn-next-mod1');
+        nextBtn.disabled = false;
+        nextBtn.className = "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-2.5 px-6 rounded-lg text-sm flex items-center gap-2 shadow-lg transition-all transform active:scale-95";
+      }
+    }
+
+    // PERDER UNA VIDA VIAL
+    function loseLife() {
+      player.lives--;
+      const livesContainer = document.getElementById('lives-display');
+      livesContainer.innerHTML = "";
+      for (let i = 0; i < 3; i++) {
+        if (i < player.lives) {
+          livesContainer.innerHTML += `<i class="fa-solid fa-heart text-red-500"></i>`;
+        } else {
+          livesContainer.innerHTML += `<i class="fa-solid fa-heart-crack text-slate-700"></i>`;
         }
+      }
 
-        function submitTriviaAnswer(option) {
-            const optionsArea = document.getElementById('trivia-options');
-            optionsArea.style.pointerEvents = "none"; 
-            
-            if (option.correct) {
-                playSound('correct');
-                state.score += 25; 
-                document.getElementById('stat-score').innerText = state.score;
-            } else {
-                playSound('wrong');
-                playSound('penalty');
-                applyTimePenalty(10); // +10s de penalización por error académico
-                loseLife();
-                showNotification("Evaluación de SST", "Infracción a las políticas o normatividad vial nacional. +10s de penalización.", "error");
-            }
-            
-            setTimeout(() => {
-                state.currentTriviaIndex++;
-                if (state.currentTriviaIndex < triviaQuestions.length && state.lives > 0) {
-                    optionsArea.style.pointerEvents = "auto";
-                    loadTriviaQuestion();
-                } else {
-                    finishGame();
-                }
-            }, 600);
+      if (player.lives <= 0) {
+        handleGameOver();
+      }
+    }
+
+    // APLICAR PENALIZACIÓN DE TIEMPO (+10 seg)
+    function applyPenalty(seconds) {
+      player.penalties += seconds;
+      const penaltyDisplay = document.getElementById('penalties-display');
+      penaltyDisplay.innerText = `+${player.penalties}s`;
+      
+      // Efecto visual de parpadeo de penalización
+      penaltyDisplay.classList.add('animate-ping', 'text-red-500');
+      setTimeout(() => {
+        penaltyDisplay.classList.remove('animate-ping');
+      }, 500);
+    }
+
+    // PASAR AL MÓDULO 2
+    function goToModule2() {
+      playSound('click');
+      player.currentStage = "Mod2";
+      document.getElementById('screen-mod1').classList.add('hidden');
+      document.getElementById('screen-mod2').classList.remove('hidden');
+      loadScenario();
+    }
+
+    // CARGAR UN ESCENARIO EN VÍA (MÓDULO 2)
+    function loadScenario() {
+      const scenario = SCENARIOS[currentScenarioIdx];
+      document.getElementById('scenario-title').innerText = scenario.title;
+      document.getElementById('scenario-desc').innerText = scenario.desc;
+      document.getElementById('scenario-progress-text').innerText = `Caso ${currentScenarioIdx + 1} de ${SCENARIOS.length}`;
+
+      const optionsBox = document.getElementById('scenario-options');
+      optionsBox.innerHTML = "";
+
+      scenario.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-4 text-xs bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-800 transition-all active:scale-[0.98] flex flex-col justify-between";
+        btn.innerHTML = `<span class="font-bold text-blue-400 mb-1.5 uppercase text-[10px]">Opción ${String.fromCharCode(65 + idx)}</span> <span>${opt.text}</span>`;
+        btn.onclick = () => evaluateScenarioAnswer(opt.correct, scenario.feedback, btn);
+        optionsBox.appendChild(btn);
+      });
+    }
+
+    // EVALUAR OPCIÓN SELECCIONADA EN EL ESCENARIO
+    function evaluateScenarioAnswer(isCorrect, feedbackText, elementBtn) {
+      const optionsBox = document.getElementById('scenario-options');
+      const buttons = optionsBox.querySelectorAll('button');
+      buttons.forEach(b => b.disabled = true);
+
+      // Crear caja de feedback dinámico
+      const feedbackDiv = document.createElement('div');
+      feedbackDiv.className = "col-span-1 md:col-span-2 p-3 rounded-xl text-xs mt-3 font-semibold text-center ";
+      
+      if (isCorrect) {
+        playSound('correct');
+        elementBtn.classList.add('border-emerald-500', 'bg-emerald-500/10', 'text-emerald-200');
+        feedbackDiv.classList.add('bg-emerald-500/10', 'text-emerald-400', 'border', 'border-emerald-500/25');
+        feedbackDiv.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${feedbackText}`;
+        player.score++;
+      } else {
+        playSound('error');
+        elementBtn.classList.add('border-red-500', 'bg-red-500/10', 'text-red-200');
+        feedbackDiv.classList.add('bg-red-500/10', 'text-red-400', 'border', 'border-red-500/25');
+        feedbackDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${feedbackText}`;
+        applyPenalty(10);
+        loseLife();
+      }
+      optionsBox.appendChild(feedbackDiv);
+
+      // Avanzar al siguiente escenario tras 2.5 segundos
+      setTimeout(() => {
+        currentScenarioIdx++;
+        if (currentScenarioIdx < SCENARIOS.length && player.lives > 0) {
+          loadScenario();
+        } else if (player.lives > 0) {
+          // Desbloquear botón para continuar
+          const nextBtn = document.getElementById('btn-next-mod2');
+          nextBtn.disabled = false;
+          nextBtn.className = "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-2.5 px-6 rounded-lg text-sm flex items-center gap-2 shadow-lg transition-all transform active:scale-95";
         }
+      }, 2500);
+    }
 
-        // CONTROLADORES DE PÉRDIDA DE VIDAS VIALES
-        function loseLife() {
-            state.lives--;
-            const livesContainer = document.getElementById('stat-lives');
-            livesContainer.innerHTML = "";
-            
-            for (let i = 0; i < 3; i++) {
-                if (i < state.lives) {
-                    livesContainer.innerHTML += `<i class="fa-solid fa-heart"></i>`;
-                } else {
-                    livesContainer.innerHTML += `<i class="fa-regular fa-heart text-slate-700"></i>`;
-                }
-            }
-            
-            if (state.lives <= 0) {
-                finishGame();
-            }
+    // PASAR AL MÓDULO 3
+    function goToModule3() {
+      playSound('click');
+      player.currentStage = "Mod3";
+      document.getElementById('screen-mod2').classList.add('hidden');
+      document.getElementById('screen-mod3').classList.remove('hidden');
+      loadTrivia();
+    }
+
+    // CARGAR PREGUNTA DE LA TRIVIA FINAL
+    function loadTrivia() {
+      const q = TRIVIA_QUESTIONS[currentTriviaIdx];
+      document.getElementById('trivia-pilar').innerText = q.pilar;
+      document.getElementById('trivia-question').innerText = q.q;
+      document.getElementById('trivia-progress-text').innerText = `Pregunta ${currentTriviaIdx + 1} de ${TRIVIA_QUESTIONS.length}`;
+
+      const optionsBox = document.getElementById('trivia-options');
+      optionsBox.innerHTML = "";
+
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-3.5 text-xs bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl border border-slate-800 transition-all active:scale-[0.98] flex items-center gap-3";
+        btn.innerHTML = `<span class="w-6 h-6 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-indigo-400">${String.fromCharCode(65 + idx)}</span> <span>${opt.text}</span>`;
+        btn.onclick = () => evaluateTriviaAnswer(opt.correct, btn);
+        optionsBox.appendChild(btn);
+      });
+    }
+
+    // EVALUAR PREGUNTA DE TRIVIA
+    function evaluateTriviaAnswer(isCorrect, elementBtn) {
+      const optionsBox = document.getElementById('trivia-options');
+      const buttons = optionsBox.querySelectorAll('button');
+      buttons.forEach(b => b.disabled = true);
+
+      if (isCorrect) {
+        playSound('correct');
+        elementBtn.classList.add('border-emerald-500', 'bg-emerald-500/10', 'text-emerald-200');
+        player.score++;
+      } else {
+        playSound('error');
+        elementBtn.classList.add('border-red-500', 'bg-red-500/10', 'text-red-200');
+        applyPenalty(10);
+        loseLife();
+      }
+
+      setTimeout(() => {
+        currentTriviaIdx++;
+        if (currentTriviaIdx < TRIVIA_QUESTIONS.length && player.lives > 0) {
+          loadTrivia();
+        } else if (player.lives > 0) {
+          const finishBtn = document.getElementById('btn-finish-game');
+          finishBtn.disabled = false;
+          finishBtn.className = "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-extrabold py-2.5 px-6 rounded-lg text-sm flex items-center gap-2 shadow-lg transition-all transform active:scale-95 cursor-pointer";
         }
+      }, 1500);
+    }
 
-        // FINALIZAR RETO DE SEGURIDAD VIAL
-        function finishGame() {
-            clearInterval(state.timerInterval);
-            clearInterval(localSimInterval);
-            playSound('win');
-            
-            document.getElementById('game-stats').classList.add('hidden');
-            document.getElementById('screen-phase1').classList.add('hidden');
-            document.getElementById('screen-phase2').classList.add('hidden');
-            document.getElementById('screen-phase3').classList.add('hidden');
-            
-            document.getElementById('screen-results').classList.remove('hidden');
-            
-            const badge = document.getElementById('badge-qualification');
-            let levelText = "Conductor de Bronce";
-            let statusResult = "finished";
+    // GESTIONAR FIN DEL JUEGO POR DERROTA (PERDER TODAS LAS VIDAS)
+    function handleGameOver() {
+      clearInterval(timerInterval);
+      playSound('error');
+      player.isFinished = true;
+      player.currentStage = "Descalificado";
 
-            if (state.lives <= 0) {
-                badge.className = "bg-rose-500/10 text-rose-400 border border-rose-500/30 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-block mb-3";
-                badge.innerText = "Reentrenamiento Sugerido";
-                levelText = "Revisión Requerida (SST)";
-                statusResult = "failed";
-            } else if (state.score >= 200) {
-                badge.className = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-block mb-3";
-                badge.innerText = "Conductor Estrella (PESV)";
-                levelText = "Conductor Diamante";
-            } else if (state.score >= 120) {
-                badge.className = "bg-blue-500/10 text-blue-400 border border-blue-500/30 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-block mb-3";
-                badge.innerText = "Aprobado: Buen Desempeño";
-                levelText = "Conductor Oro";
-            }
-            
-            const totalSecs = state.elapsedTime / 1000;
-            document.getElementById('res-time').innerText = `${totalSecs.toFixed(2)}s`;
-            document.getElementById('res-score').innerText = `${state.score} Ptos`;
-            
-            document.getElementById('cert-player-name').innerText = state.playerName;
-            document.getElementById('cert-level').innerText = levelText;
-            
-            const dateObj = new Date();
-            const formatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('cert-date').innerText = dateObj.toLocaleDateString('es-ES', formatOptions);
+      // Reportar datos fallidos a la hoja de cálculo
+      reportResultsToGoogleSheets("Descalificado");
 
-            if (!isOfflineMode) {
-                updateLiveStatus({
-                    status: statusResult,
-                    score: state.score,
-                    elapsedTime: state.elapsedTime,
-                    currentPhase: 4
-                });
-            }
+      // Modificar UI final para mostrar descalificación
+      document.getElementById('screen-mod1').classList.add('hidden');
+      document.getElementById('screen-mod2').classList.add('hidden');
+      document.getElementById('screen-mod3').classList.add('hidden');
+      document.getElementById('screen-result').classList.remove('hidden');
+
+      // Actualizar métricas finales
+      document.getElementById('result-lives').innerText = "0/3";
+      document.getElementById('result-score').innerText = `${player.score}/${5 + SCENARIOS.length + TRIVIA_QUESTIONS.length}`;
+      document.getElementById('result-penalties').innerText = `${player.penalties}s`;
+      document.getElementById('result-time').innerText = "DESCALIFICADO";
+
+      drawCertificate(true); // Genera certificado reprobado o de advertencia
+    }
+
+    // TERMINAR JUEGO CON ÉXITO
+    function finishGame() {
+      clearInterval(timerInterval);
+      playSound('victory');
+      player.isFinished = true;
+      player.currentStage = "Completado";
+
+      // Reportar datos a Google Sheets
+      reportResultsToGoogleSheets("Completado");
+
+      // Cambiar pantallas
+      document.getElementById('screen-mod3').classList.add('hidden');
+      document.getElementById('screen-result').classList.remove('hidden');
+
+      // Actualizar métricas de rendimiento en UI
+      const totalQuestions = 5 + SCENARIOS.length + TRIVIA_QUESTIONS.length;
+      document.getElementById('result-lives').innerText = `${player.lives}/3`;
+      document.getElementById('result-score').innerText = `${player.score}/${totalQuestions}`;
+      document.getElementById('result-penalties').innerText = `${player.penalties}s`;
+      
+      const totalSeconds = player.timeElapsed + player.penalties;
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = Math.floor(totalSeconds % 60);
+      document.getElementById('result-time').innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${Math.floor((totalSeconds % 1) * 100).toString().padStart(2, '0')}`;
+
+      // Dibujar Certificado Técnico Vial
+      drawCertificate(false);
+    }
+
+    // ENVIAR DATOS EN TIEMPO REAL A GOOGLE SHEETS
+    function reportResultsToGoogleSheets(statusStr) {
+      const syncText = document.getElementById('sync-text');
+      const syncDot = document.getElementById('sync-dot');
+      const syncIcon = document.getElementById('sync-icon');
+
+      syncText.innerText = "Enviando marca vial a Google Sheets...";
+      syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
+      syncIcon.className = "fa-solid fa-spinner animate-spin text-amber-500 text-sm";
+
+      const payload = {
+        name: player.name,
+        roomCode: player.room,
+        score: player.score,
+        time: Math.round(player.timeElapsed),
+        penalties: player.penalties,
+        totalTime: Math.round(player.timeElapsed + player.penalties),
+        status: statusStr
+      };
+
+      // Implementar llamada Fetch POST con control de errores para Apps Script
+      fetch(GOOGLE_SHEETS_ENDPOINT, {
+        method: "POST",
+        mode: "no-cors", // Requerido para evitar problemas comunes de CORS de Apps Script redirects
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        // Al usar 'no-cors' la respuesta suele ser opaca, por lo que asumimos éxito al no arrojar error.
+        syncText.innerText = "¡Sincronización de puntajes completada!";
+        syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
+        syncIcon.className = "fa-solid fa-circle-check text-emerald-500 text-sm";
+      })
+      .catch(err => {
+        console.error("Error al enviar reporte:", err);
+        syncText.innerText = "Error de sincronización. Guardado de respaldo local.";
+        syncDot.className = "relative inline-flex rounded-full h-2 w-2 bg-red-500";
+        syncIcon.className = "fa-solid fa-circle-exclamation text-red-500 text-sm";
+      });
+    }
+
+    // DIBUJAR CERTIFICADO EN EL CANVAS
+    function drawCertificate(isFailed) {
+      const canvas = document.getElementById('certificate-canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Fondo del Certificado
+      ctx.fillStyle = "#020617";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Marco Dorado o Gris
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = isFailed ? "#ef4444" : "#f59e0b";
+      ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
+
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#1e293b";
+      ctx.strokeRect(25, 25, canvas.width - 50, canvas.height - 50);
+
+      // Textos del Certificado
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      
+      // Título
+      ctx.font = "bold 22px Outfit, sans-serif";
+      ctx.fillText("PAR SERVICIOS DE INGENIERÍA S.A.S.", canvas.width / 2, 65);
+      
+      ctx.font = "12px Outfit, sans-serif";
+      ctx.fillStyle = "#94a3b8";
+      ctx.fillText("DEPARTAMENTO DE SEGURIDAD Y SALUD EN EL TRABAJO (SST)", canvas.width / 2, 85);
+
+      ctx.strokeStyle = "#334155";
+      ctx.beginPath();
+      ctx.moveTo(100, 105);
+      ctx.lineTo(500, 105);
+      ctx.stroke();
+
+      if (isFailed) {
+        ctx.font = "bold 20px Outfit, sans-serif";
+        ctx.fillStyle = "#f87171";
+        ctx.fillText("CONSTANCIA DE ASISTENCIA Y CONTROL VIAL", canvas.width / 2, 140);
+
+        ctx.font = "14px Outfit, sans-serif";
+        ctx.fillStyle = "#f1f5f9";
+        ctx.fillText("Se registra que el colaborador:", canvas.width / 2, 180);
+
+        ctx.font = "bold 24px Outfit, sans-serif";
+        ctx.fillStyle = "#ef4444";
+        ctx.fillText(player.name.toUpperCase(), canvas.width / 2, 215);
+
+        ctx.font = "12px Outfit, sans-serif";
+        ctx.fillStyle = "#cbd5e1";
+        ctx.fillText(`Participó en la sesión lúdica de seguridad vial en la sala: ${player.room}`, canvas.width / 2, 255);
+        ctx.fillText(`Siniestros acumulados en ruta: Superó el límite de infracciones permitidas (Vidas 0/3).`, canvas.width / 2, 275);
+        ctx.fillText(`Requiere revisión de conceptos básicos del PESV y reentrenamiento.`, canvas.width / 2, 295);
+
+      } else {
+        ctx.font = "bold 22px Outfit, sans-serif";
+        ctx.fillStyle = "#fbbf24";
+        ctx.fillText("CERTIFICADO DE CONDUCTOR SEGURO", canvas.width / 2, 140);
+
+        ctx.font = "14px Outfit, sans-serif";
+        ctx.fillStyle = "#f1f5f9";
+        ctx.fillText("Otorgado con distinción al colaborador:", canvas.width / 2, 180);
+
+        ctx.font = "bold 26px Outfit, sans-serif";
+        ctx.fillStyle = "#60a5fa";
+        ctx.fillText(player.name.toUpperCase(), canvas.width / 2, 215);
+
+        const totalSecs = Math.round(player.timeElapsed + player.penalties);
+        ctx.font = "12px Outfit, sans-serif";
+        ctx.fillStyle = "#cbd5e1";
+        ctx.fillText(`Por haber aprobado la capacitación interactiva del PESV de acuerdo con la Res. 40595.`, canvas.width / 2, 255);
+        ctx.fillText(`Marca de Carrera: ${totalSecs} segundos (con penalizaciones viales incluidas).`, canvas.width / 2, 275);
+        ctx.fillText(`Puntaje de Respuestas Correctas: ${player.score} de 12 posibles de la normatividad de tránsito.`, canvas.width / 2, 295);
+      }
+
+      // Fecha de Emisión
+      const dateStr = new Date().toLocaleDateString();
+      ctx.font = "italic 11px Outfit, sans-serif";
+      ctx.fillStyle = "#64748b";
+      ctx.fillText(`Fecha de Validación: ${dateStr} - Código Verificador: PAR-PESV-${Math.floor(Math.random() * 90000 + 10000)}`, canvas.width / 2, 340);
+
+      // Sello SST Firma Digital
+      ctx.font = "bold 9px monospace";
+      ctx.fillStyle = isFailed ? "#f87171" : "#10b981";
+      ctx.fillText("VERIFICADO SST - PAR SERVICIOS", canvas.width / 2, 365);
+    }
+
+    // DESCARGAR CERTIFICADO EN PNG
+    function downloadCertificate() {
+      playSound('click');
+      const canvas = document.getElementById('certificate-canvas');
+      const link = document.createElement('a');
+      link.download = `Certificado_PESV_${player.name.replace(/\s+/g, '_')}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+
+    // ACTUALIZAR TABLA DE CLASIFICACIÓN EN LA BARRA LATERAL
+    function updateLeaderboardUI() {
+      const listContainer = document.getElementById('leaderboard-list');
+      listContainer.innerHTML = "";
+
+      // Consolidar todos los competidores en una sola lista para ordenar
+      let allCompetitors = [];
+      
+      // Agregar al jugador real
+      let currentTotalTime = Math.round(player.timeElapsed + player.penalties);
+      allCompetitors.push({
+        name: player.name || "Tú (Pendiente)",
+        stage: player.currentStage === "Mod1" ? "Fase 1 (Preoperacional)" :
+               player.currentStage === "Mod2" ? "Fase 2 (Escenarios)" :
+               player.currentStage === "Mod3" ? "Fase 3 (Trivia Final)" :
+               player.currentStage === "Finished" ? "Terminado" :
+               player.currentStage === "Descalificado" ? "Descalificado" : player.currentStage,
+        time: player.isFinished ? currentTotalTime : (player.name ? currentTotalTime : 0),
+        isPlayer: true
+      });
+
+      // Agregar a los competidores simulados si hay registro de sala
+      if (player.name) {
+        competitors.forEach(comp => {
+          allCompetitors.push({
+            name: comp.name,
+            stage: comp.stage,
+            time: comp.time + comp.penalties,
+            isPlayer: false
+          });
+        });
+      }
+
+      // Ordenar por: 1. Terminados primero con menor tiempo. 2. Descalificados al final. 3. Fase actual.
+      allCompetitors.sort((a, b) => {
+        if (a.stage === "Descalificado" && b.stage !== "Descalificado") return 1;
+        if (b.stage === "Descalificado" && a.stage !== "Descalificado") return -1;
+        
+        if (a.stage === "Terminado" && b.stage === "Terminado") {
+          return a.time - b.time;
         }
+        if (a.stage === "Terminado") return -1;
+        if (b.stage === "Terminado") return 1;
 
-        // RESETEAR EL JUEGO PARA NUEVA CARRERA
-        window.restartGame = function() {
-            playSound('click');
-            state = {
-                playerName: state.playerName,
-                roomId: state.roomId,
-                score: 0,
-                lives: 3,
-                currentPhase: 1,
-                inspectedElements: {
-                    brakes: false,
-                    tyres: false,
-                    lights: false,
-                    kit: false,
-                    belt: false
-                },
-                currentEventIndex: 0,
-                currentTriviaIndex: 0,
-                startTime: null,
-                elapsedTime: 0,
-                penaltyTime: 0,
-                timerInterval: null
-            };
-            
-            const livesContainer = document.getElementById('stat-lives');
-            livesContainer.innerHTML = `<i class="fa-solid fa-heart"></i><i class="fa-solid fa-heart"></i><i class="fa-solid fa-heart"></i>`;
-            document.getElementById('stat-score').innerText = "0";
-            document.getElementById('stat-timer').innerText = "00:00.00";
-            
-            const elements = ['brakes', 'tyres', 'lights', 'kit', 'belt'];
-            elements.forEach(el => {
-                const node = document.getElementById(`node-${el}`);
-                if (node) {
-                    node.disabled = false;
-                    node.className = "absolute w-8 h-8 rounded-full bg-blue-500 border-2 border-white text-white font-bold flex items-center justify-center pulse-element focus:outline-none hover:bg-blue-400 transition-colors";
-                    
-                    if (el === 'brakes') node.innerHTML = `<i class="fa-solid fa-gauge-simple-high text-xs"></i>`;
-                    if (el === 'tyres') node.innerHTML = `<i class="fa-solid fa-circle-dot text-xs"></i>`;
-                    if (el === 'lights') node.innerHTML = `<i class="fa-solid fa-lightbulb text-xs"></i>`;
-                    if (el === 'kit') node.innerHTML = `<i class="fa-solid fa-toolbox text-xs"></i>`;
-                    if (el === 'belt') node.innerHTML = `<i class="fa-solid fa-user-shield text-xs"></i>`;
-                }
-            });
+        return b.time - a.time; // Por aproximación
+      });
 
-            for (let i = 0; i < 3; i++) {
-                const badge = document.getElementById(`badge-event-${i}`);
-                if (badge) {
-                    badge.className = "flex-1 py-2 text-center rounded-lg bg-slate-900 text-slate-600 text-[9px] font-bold uppercase border border-slate-800";
-                }
-            }
-            
-            document.getElementById('screen-results').classList.add('hidden');
-            document.getElementById('screen-intro').classList.remove('hidden');
+      allCompetitors.forEach((c, idx) => {
+        const item = document.createElement('div');
+        
+        // Estilos para resaltar al usuario real frente a los bots
+        const bgClass = c.isPlayer 
+          ? 'bg-blue-600/20 border-blue-500/40 neon-border-blue' 
+          : 'bg-slate-900/40 border-slate-800';
+        
+        const rankColor = idx === 0 ? 'text-amber-400' : idx === 1 ? 'text-slate-300' : idx === 2 ? 'text-amber-700' : 'text-slate-500';
 
-            if (isOfflineMode) {
-                setupLocalSimulation();
-            } else {
-                updateLiveStatus({
-                    status: 'lobby',
-                    score: 0,
-                    elapsedTime: 0,
-                    currentPhase: 1
-                });
-            }
-        };
-    </script>
+        item.className = `p-3 rounded-xl border ${bgClass} flex items-center justify-between gap-2.5 transition-all`;
+        
+        item.innerHTML = `
+          <div class="flex items-center gap-2 max-w-[70%]">
+            <span class="font-black text-sm ${rankColor} w-4 text-center">${idx + 1}</span>
+            <div class="overflow-hidden">
+              <span class="font-bold text-xs text-white block truncate">${c.name}</span>
+              <span class="text-[10px] text-slate-400 block truncate">${c.stage}</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="font-mono text-xs font-bold text-slate-300 block">${c.time}s</span>
+            ${c.stage === "Descalificado" ? '<span class="text-[9px] text-red-500 font-bold">FALLÓ</span>' : '<span class="text-[9px] text-slate-500">Neto</span>'}
+          </div>
+        `;
+        listContainer.appendChild(item);
+      });
+    }
+
+    // VOLVER A EMPEZAR LA CAPACITACIÓN VIAL
+    function restartGame() {
+      playSound('click');
+      
+      // Reiniciar Variables
+      player.score = 0;
+      player.lives = 3;
+      player.timeElapsed = 0;
+      player.penalties = 0;
+      player.currentStage = "Lobby";
+      player.isFinished = false;
+
+      currentScenarioIdx = 0;
+      currentTriviaIdx = 0;
+
+      // Resetear interfaces de pantallas
+      document.getElementById('screen-result').classList.add('hidden');
+      document.getElementById('screen-lobby').classList.remove('hidden');
+      document.getElementById('game-stats-header').classList.add('hidden');
+
+      // Detener loops
+      if (timerInterval) clearInterval(timerInterval);
+      
+      // Reiniciar simulación de IA
+      startCompetitorSimulation();
+      updateLeaderboardUI();
+    }
+  </script>
 </body>
 </html>
